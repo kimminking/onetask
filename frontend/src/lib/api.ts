@@ -73,7 +73,8 @@ export const api = {
   words: {
     list: (hsk_level?: number) => req<Word[]>(`/words/${hsk_level ? `?hsk_level=${hsk_level}` : ""}`),
     due: (hsk_level?: number) => req<Word[]>(`/words/due${hsk_level ? `?hsk_level=${hsk_level}` : ""}`),
-    stats: (hsk_level?: number) => req<{ total: number; reviewed: number; new: number; due: number }>(`/words/stats${hsk_level ? `?hsk_level=${hsk_level}` : ""}`),
+    stats: (hsk_level?: number) => req<{ total: number; reviewed: number; new: number; due: number; today: number }>(`/words/stats${hsk_level ? `?hsk_level=${hsk_level}` : ""}`),
+    today: (hsk_level?: number) => req<Word[]>(`/words/today${hsk_level ? `?hsk_level=${hsk_level}` : ""}`),
     create: (data: { chinese: string; pinyin: string; meaning: string; example_zh?: string; example_ko?: string }) =>
       req<Word>("/words/", { method: "POST", body: JSON.stringify(data) }),
     review: (id: number, knew: boolean) =>

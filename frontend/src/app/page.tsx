@@ -27,11 +27,12 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-dvh bg-dark-400">
       {/* 헤더 */}
-      <div className="px-6 pt-14 pb-6 bg-dark-300 border-b border-white/5">
-        <p className="text-stone-600 text-xs tracking-widest mb-1">{dateStr}</p>
-        <h1 className="text-3xl font-bold text-stone-100 tracking-tight">onetask</h1>
+      <div className="px-6 pt-10 pb-6 bg-dark-300 border-b border-white/5">
+        <div className="lg:hidden">
+          <h1 className="text-3xl font-bold text-jeok-400 tracking-tight">onetask</h1>
+          <p className="text-stone-600 text-xs mt-1">{dateStr}</p>
+        </div>
 
-        {/* 통계 뱃지 */}
         <div className="flex gap-2 mt-4">
           <span className="flex items-center gap-1.5 bg-dark-200 rounded-full px-3 py-1.5 text-xs font-medium text-stone-400">
             <span className="w-1.5 h-1.5 rounded-full bg-jeok-500 inline-block" />

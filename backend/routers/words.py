@@ -105,6 +105,7 @@ def get_due_words(hsk_level: Optional[int] = None, db: Session = Depends(get_db)
 @router.get("/stats")
 def get_stats(hsk_level: Optional[int] = None, db: Session = Depends(get_db)):
     now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     q = db.query(Word)
     if hsk_level:
         q = q.filter(Word.hsk_level == hsk_level)
@@ -115,7 +116,22 @@ def get_stats(hsk_level: Optional[int] = None, db: Session = Depends(get_db)):
     total = len(words)
     reviewed = len(reviewed_ids)
     due = sum(1 for c in cards if c.due <= now) + (total - reviewed)
-    return {"total": total, "reviewed": reviewed, "new": total - reviewed, "due": due}
+    today = sum(1 for c in cards if c.last_review and c.last_review >= today_start)
+    return {"total": total, "reviewed": reviewed, "new": total - reviewed, "due": due, "today": today}
+
+
+@router.get("/today")
+def get_today_words(hsk_level: Optional[int] = None, db: Session = Depends(get_db)):
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    q = db.query(Word)
+    if hsk_level:
+        q = q.filter(Word.hsk_level == hsk_level)
+    words = q.all()
+    word_ids = {w.id: w for w in words}
+    cards = [wc for wc in db.query(WordCard).all()
+             if wc.word_id in word_ids and wc.last_review and wc.last_review >= today_start]
+    return [_word_with_card(word_ids[wc.word_id], wc) for wc in cards]
 
 
 @router.post("/")

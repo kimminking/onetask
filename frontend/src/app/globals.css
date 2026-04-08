@@ -14,12 +14,21 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* PC에서 모바일 프레임처럼 보이게 */
+/* 모바일: 왼쪽 정렬 프레임 */
 #app-frame {
   max-width: 430px;
   min-height: 100dvh;
-  margin: 0 auto;
+  margin: 0;
   background: #141110;
   position: relative;
   box-shadow: 0 0 60px rgba(0,0,0,0.6);
+}
+
+/* PC: 사이드바 옆 콘텐츠 꽉 채우기 */
+@media (min-width: 1024px) {
+  #app-frame {
+    max-width: 100%;
+    box-shadow: none;
+    flex: 1;
+  }
 }

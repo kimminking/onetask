@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { api, Word } from "@/lib/api";
 
-type Mode = "select" | "home" | "review" | "browse";
+type Mode = "select" | "home" | "review" | "browse" | "today";
 type Phase = "question" | "answer";
 
 const STATE_LABEL: Record<number, string> = { 0: "신규", 1: "학습중", 2: "복습", 3: "다시학습" };
@@ -35,9 +35,10 @@ const HSK_LEVELS = [
 export default function WordsPage() {
   const [mode, setMode] = useState<Mode>("select");
   const [selectedLevel, setSelectedLevel] = useState<number>(3);
-  const [stats, setStats] = useState({ total: 0, reviewed: 0, new: 0, due: 0 });
+  const [stats, setStats] = useState({ total: 0, reviewed: 0, new: 0, due: 0, today: 0 });
   const [allWords, setAllWords] = useState<Word[]>([]);
   const [dueWords, setDueWords] = useState<Word[]>([]);
+  const [todayWords, setTodayWords] = useState<Word[]>([]);
   const [loading, setLoading] = useState(false);
 
   const reload = useCallback(async (level: number) => {
@@ -60,25 +61,32 @@ export default function WordsPage() {
     setMode("review");
   };
 
+  const openToday = async () => {
+    const words = await api.words.today(selectedLevel);
+    setTodayWords(words);
+    setMode("today");
+  };
+
   if (mode === "review") {
     return <ReviewSession words={dueWords} onDone={() => { reload(selectedLevel); setMode("home"); }} onBack={() => setMode("home")} />;
   }
   if (mode === "browse") {
     return <BrowseMode words={allWords} onBack={() => setMode("home")} />;
   }
+  if (mode === "today") {
+    return <BrowseMode words={todayWords} title="오늘 공부한 단어" onBack={() => setMode("home")} />;
+  }
 
   /* ── 레벨 선택 화면 ── */
   if (mode === "select") {
     return (
       <div className="flex flex-col min-h-dvh bg-dark-400">
-        <div className="px-6 pt-14 pb-6 bg-dark-300 border-b border-white/5">
-          <div className="flex items-center justify-between mb-5">
-            <Link href="/" className="text-stone-600 text-xs hover:text-stone-400 transition-colors">← 홈</Link>
-            <Link href="/image-test" className="text-xs text-jeok-400 hover:text-jeok-300 border border-jeok-800 px-3 py-1.5 rounded-full transition-colors">
-              🎨 이미지 테스트
-            </Link>
-          </div>
-          <h1 className="text-2xl font-bold text-stone-100">단어 암기장</h1>
+        <div className="px-6 pt-10 pb-6 bg-dark-300 border-b border-white/5">
+          <Link href="/" className="lg:hidden w-fit block">
+            <p className="text-3xl font-bold text-jeok-400 tracking-tight">onetask</p>
+            <p className="text-stone-600 text-xs mt-1">{new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" })}</p>
+          </Link>
+          <h1 className="text-2xl font-bold text-stone-100 mt-5">단어 암기장</h1>
           <p className="text-stone-500 text-sm mt-1">레벨을 선택하세요</p>
         </div>
 
@@ -118,14 +126,15 @@ export default function WordsPage() {
   return (
     <div className="flex flex-col min-h-dvh bg-dark-400">
       <div className="px-6 pt-14 pb-6 bg-dark-300 border-b border-white/5">
-        <button
-          onClick={() => setMode("select")}
-          className="text-stone-600 text-xs mb-5 flex items-center gap-1 hover:text-stone-400 transition-colors"
-        >
-          ← 레벨 선택
-        </button>
-        <h1 className="text-2xl font-bold text-stone-100">HSK {selectedLevel}</h1>
-        <p className="text-stone-500 text-xs mt-1">{HSK_LEVELS.find(l => l.value === selectedLevel)?.desc}</p>
+          <Link href="/" className="flex items-center gap-3 w-fit">
+            <Image src="/logo/ringlogo-flipped.png" alt="onetask" width={44} height={44} className="invert opacity-80" />
+            <div>
+              <p className="text-3xl font-bold text-jeok-400 tracking-tight">onetask</p>
+              <p className="text-stone-600 text-xs mt-0.5">{new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" })}</p>
+            </div>
+          </Link>
+          <h1 className="text-2xl font-bold text-stone-100 mt-5">HSK {selectedLevel}</h1>
+          <p className="text-stone-500 text-xs mt-1">{HSK_LEVELS.find(l => l.value === selectedLevel)?.desc}</p>
       </div>
 
       <div className="flex-1 px-4 py-5 flex flex-col gap-3">
@@ -142,6 +151,16 @@ export default function WordsPage() {
             >
               {stats.due > 0 ? "오늘 복습 시작" : "오늘 복습 완료 🎉"}
             </button>
+
+            {stats.today > 0 && (
+              <button
+                onClick={openToday}
+                className="w-full py-4 bg-dark-200 hover:bg-dark-100 border border-jeok-900 hover:border-jeok-700 rounded-2xl transition-all flex items-center justify-between px-5"
+              >
+                <span className="text-stone-300 font-medium text-sm">오늘 공부한 단어</span>
+                <span className="text-jeok-400 font-bold text-sm">{stats.today}개 →</span>
+              </button>
+            )}
 
             <button
               onClick={() => setMode("browse")}
@@ -384,14 +403,14 @@ function ReviewSession({ words, onDone, onBack }: { words: Word[]; onDone: () =>
 }
 
 /* ── 전체 목록 ─────────────────────────────────────────────── */
-function BrowseMode({ words, onBack }: { words: Word[]; onBack: () => void }) {
+function BrowseMode({ words, onBack, title = "전체 단어" }: { words: Word[]; onBack: () => void; title?: string }) {
   return (
     <div className="flex flex-col min-h-dvh bg-dark-400">
       <div className="px-6 pt-14 pb-5 bg-dark-300 border-b border-white/5">
         <button onClick={onBack} className="text-stone-600 text-xs mb-4 flex items-center gap-1 hover:text-stone-400 transition-colors">
           ← 돌아가기
         </button>
-        <h2 className="text-xl font-bold text-stone-100">전체 단어 <span className="text-stone-500 font-normal text-sm">{words.length}개</span></h2>
+        <h2 className="text-xl font-bold text-stone-100">{title} <span className="text-stone-500 font-normal text-sm">{words.length}개</span></h2>
       </div>
       <div className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
         {words.map((w) => (
@@ -399,8 +418,8 @@ function BrowseMode({ words, onBack }: { words: Word[]; onBack: () => void }) {
             <div className="flex items-baseline gap-2.5">
               <span className="text-2xl font-bold text-stone-100">{w.chinese}</span>
               <span className="text-sm text-stone-500 font-light">{w.pinyin}</span>
-              <span className="ml-auto text-sm text-stone-300 font-medium">{w.meaning}</span>
             </div>
+            <p className="text-sm text-stone-300 font-medium mt-0.5 leading-snug">{w.meaning}</p>
             <div className="flex items-center gap-2 mt-2">
               <span className={`text-xs font-medium ${STATE_COLOR[w.state]}`}>{STATE_LABEL[w.state]}</span>
               {w.reps > 0 && <span className="text-xs text-stone-700">· 복습 {w.reps}회</span>}

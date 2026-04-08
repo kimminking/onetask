@@ -14,64 +14,32 @@ client = replicate.Client(api_token=os.getenv("REPLICATE_API_TOKEN"))
 OUTPUT_DIR = "test_output"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# 플래시카드용 프롬프트 - 단순하고 아이콘처럼 명확한 표현
+# 플래시카드용 장면 - 지브리 스타일 테스트
 SCENES = [
     {
         "key": "friendship",
-        "prompt": "two cartoon children happily holding hands, simple clean illustration, white background, bright cheerful colors, minimalist, cute",
+        "prompt": "two children holding hands in a sunlit meadow",
     },
     {
         "key": "food",
-        "prompt": "colorful bowl of delicious food with steam rising, simple clean illustration, white background, bright colors, cute, minimalist icon style",
+        "prompt": "a steaming bowl of ramen on a wooden table",
+    },
+    {
+        "key": "journey",
+        "prompt": "a small girl walking along a forest path with a cat",
     },
 ]
 
-# 스타일별로 다른 모델 - 한 장씩 비교용
+# flux-schnell: 가장 저렴한 모델 (4 steps, 초고속)
 MODELS = [
-    # 1. flux-1.1-pro - 고품질 사실적 일러스트
     {
-        "key": "flux-pro",
-        "id": "black-forest-labs/flux-1.1-pro",
+        "key": "ghibli-schnell",
+        "id": "black-forest-labs/flux-schnell",
         "input": lambda p: {
-            "prompt": f"cute flat illustration, children's book style, {p}, soft pastel colors, simple white background, clean lines",
+            "prompt": f"Studio Ghibli style anime illustration, {p}, soft watercolor, warm pastel colors, hand-drawn feel, gentle lighting, magical atmosphere, simple clean background",
             "aspect_ratio": "1:1",
             "output_format": "webp",
-            "output_quality": 90,
-            "safety_tolerance": 2,
-        },
-    },
-    # 2. recraft-v3 - 2d 포스터 스타일
-    {
-        "key": "recraft-poster",
-        "id": "recraft-ai/recraft-v3",
-        "input": lambda p: {
-            "prompt": f"flat 2d illustration, bold simple shapes, {p}, bright primary colors, clean minimal design, white background",
-            "size": "1024x1024",
-            "style": "digital_illustration/2d_art_poster",
-        },
-    },
-    # 3. ideogram - 동화풍 일러스트
-    {
-        "key": "ideogram",
-        "id": "ideogram-ai/ideogram-v2",
-        "input": lambda p: {
-            "prompt": f"cute children's book illustration, watercolor style, {p}, soft pastel colors, simple background, warm and friendly",
-            "aspect_ratio": "1:1",
-            "resolution": "1024x1024",
-            "style_type": "General",
-        },
-    },
-    # 4. sd3.5 - pixar/3d 귀여운 스타일
-    {
-        "key": "sd3-pixar",
-        "id": "stability-ai/stable-diffusion-3.5-large",
-        "input": lambda p: {
-            "prompt": f"cute pixar 3d style, {p}, soft rounded shapes, pastel colors, simple clean background, high quality render",
-            "negative_prompt": "anime, flat, sketch, text, watermark, complex background",
-            "aspect_ratio": "1:1",
-            "output_format": "webp",
-            "num_inference_steps": 28,
-            "guidance_scale": 5.0,
+            "num_inference_steps": 4,
         },
     },
 ]
@@ -94,8 +62,8 @@ def run():
                 save_image(url, name)
             except Exception as e:
                 print(f"  실패: {e}")
-            # rate limit 대응: 요청 사이 12초 대기
-            time.sleep(12)
+            # rate limit 대응 (크레딧 $5 미만: burst=1, 요청 간 15초)
+            time.sleep(15)
 
     print(f"\n완료. {OUTPUT_DIR}/ 폴더 확인해봐.")
 
