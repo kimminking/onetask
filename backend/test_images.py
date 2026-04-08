@@ -40,14 +40,14 @@ MODELS = [
             "safety_tolerance": 2,
         },
     },
-    # 2. recraft-v3 vector - 깔끔한 벡터 스타일
+    # 2. recraft-v3 - 2d 포스터 스타일
     {
-        "key": "recraft-vector",
+        "key": "recraft-poster",
         "id": "recraft-ai/recraft-v3",
         "input": lambda p: {
-            "prompt": f"flat vector illustration, bold simple shapes, {p}, bright primary colors, clean minimal design, white background",
+            "prompt": f"flat 2d illustration, bold simple shapes, {p}, bright primary colors, clean minimal design, white background",
             "size": "1024x1024",
-            "style": "vector_illustration",
+            "style": "digital_illustration/2d_art_poster",
         },
     },
     # 3. ideogram - 동화풍 일러스트
@@ -56,9 +56,9 @@ MODELS = [
         "id": "ideogram-ai/ideogram-v2",
         "input": lambda p: {
             "prompt": f"cute children's book illustration, watercolor style, {p}, soft pastel colors, simple background, warm and friendly",
-            "aspect_ratio": "ASPECT_1_1",
-            "resolution": "RESOLUTION_1024_1024",
-            "style_type": "ILLUSTRATION",
+            "aspect_ratio": "1:1",
+            "resolution": "1024x1024",
+            "style_type": "General",
         },
     },
     # 4. sd3.5 - pixar/3d 귀여운 스타일
