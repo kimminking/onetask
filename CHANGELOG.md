@@ -5,23 +5,45 @@
 ## 2026-04-10 (세션 6)
 ### 완료
 - 영어 단어장 DB 구축: `english_words` 테이블 생성, MUSE en-ko 15,868개 삽입
-  - Facebook Research MUSE 사전 (en-ko.txt) 다운로드
-  - 음역(transliteration) 필터링 후 유효 단어 15,868개
-  - 컬럼: `id`, `word`, `meaning`, `created_at`
-- HSK4 이미지 생성 스크립트 준비 (`gen_hsk4_images.py`, LIMIT 200)
-- 모바일 LAN 접속 설정 완료 (frontend 0.0.0.0 바인딩, CORS 추가)
+  - 음역 필터링 후 유효 단어 15,868개 / wordfreq 기반 CEFR 레벨(A1~C1) 태깅
+- 영어 단어 FSRS 플래시카드 구현
+  - `/english-words` API 라우터 (due/stats/today/review)
+  - 카드 앞면 영어 단어 발음 (Web Speech API, en-US)
+  - 단어장 진입 구조: 언어 선택(중국어/영어) → 레벨 선택 → 학습
+- 단어 카드 앞면에 복사 버튼 추가 (SVG 아이콘, 복사 후 체크 표시)
+- 캘린더 일정 기능 추가
+  - `calendar_events` 테이블 신규 (title, event_date, event_time)
+  - `/calendar-events` API 라우터 (CRUD)
+  - 날짜별 이벤트 추가/삭제 인라인 UI
+- 투두 due_at 필드 추가
+  - `tasks` 테이블에 `due_at` 컬럼 추가 (ALTER TABLE)
+  - AddTaskForm에 날짜/시간 선택 UI (클릭 시 현재+1시간 자동 설정)
+  - TaskItem에 날짜 배지 표시
+- 캘린더 그리드 개선: 완료(초록)/예정 투두(jeok)/일정(파랑) 색상 구분 점
+- 로고 클릭 가능하게 변경, 단어장 설명 텍스트 수정
+- 드래그 핸들 누를 때 scale 효과로 변경
 
 ### 변경된 파일
+- `backend/models.py` — Task에 due_at, CalendarEvent·EnglishWord·EnglishWordCard 모델 추가
+- `backend/routers/tasks.py` — due_at 필드, /scheduled 엔드포인트 추가
+- `backend/routers/english_words.py` — 신규: 영어 단어 FSRS 라우터
+- `backend/routers/calendar_events.py` — 신규: 캘린더 이벤트 CRUD 라우터
+- `backend/main.py` — english_words, calendar_events 라우터 등록
 - `backend/import_english.py` — 신규: MUSE en-ko import 스크립트
+- `backend/add_english_levels.py` — 신규: wordfreq CEFR 레벨 태깅 스크립트
 - `backend/gen_hsk4_images.py` — 신규: HSK4 watercolor 이미지 생성 스크립트
-- `backend/main.py` — CORS origins에 192.168.219.104:3000 추가
-- `frontend/.env.local` — 신규: NEXT_PUBLIC_API_URL=http://192.168.219.104:8000
-- `frontend/package.json` — dev script에 -H 0.0.0.0 추가
+- `frontend/src/app/words/page.tsx` — 언어 선택 구조로 전면 개편, 영어 카드 컴포넌트 추가
+- `frontend/src/app/calendar/page.tsx` — 이벤트+예정 투두 표시, 일정 추가 UI
+- `frontend/src/app/page.tsx` — 로고 링크화, 단어장 설명 수정
+- `frontend/src/components/AddTaskForm.tsx` — due_at 날짜/시간 선택 UI
+- `frontend/src/components/TaskItem.tsx` — due_at 배지, 드래그 scale 효과
+- `frontend/src/lib/api.ts` — EnglishWord·CalendarEvent 타입, 관련 API 메서드 추가
+- `frontend/src/store/taskStore.ts` — addTask due_at 파라미터 추가
 
 ### 다음 세션
-- 영어 단어 API 엔드포인트 추가 (`/english-words`)
-- 영어 단어장 프론트엔드 UI 구현
-- HSK4 이미지 생성 실행 (python gen_hsk4_images.py)
+- HSK4 이미지 생성 실행 (python gen_hsk4_images.py, ~54분)
+- 캘린더 일정 수정 기능 (현재 추가/삭제만 가능)
+- 푸시 알림 + FSRS 서버사이드 스케줄링 (2단계)
 
 ---
 
