@@ -1,32 +1,59 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTaskStore } from "@/store/taskStore";
 import { Urgency } from "@/lib/api";
+
+function defaultDue() {
+  const d = new Date();
+  d.setHours(d.getHours() + 1, 0, 0, 0);
+  const date = d.toLocaleDateString("sv-SE"); // "YYYY-MM-DD"
+  const time = `${String(d.getHours()).padStart(2, "0")}:00`;
+  return { date, time };
+}
 
 export default function AddTaskForm() {
   const { addTask, categories } = useTaskStore();
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [urgency, setUrgency] = useState<Urgency>("normal");
+  const [dueDate, setDueDate] = useState("");
+  const [dueTime, setDueTime] = useState("");
+  const [showDate, setShowDate] = useState(false);
   const [open, setOpen] = useState(false);
+
+  const dateRef = useRef<HTMLInputElement>(null);
+  const timeRef = useRef<HTMLInputElement>(null);
+
+  const toggleDate = () => {
+    if (showDate) {
+      setDueDate(""); setDueTime(""); setShowDate(false);
+    } else {
+      const { date, time } = defaultDue();
+      setDueDate(date); setDueTime(time); setShowDate(true);
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    await addTask(title.trim(), category || undefined, urgency);
-    setTitle("");
-    setCategory("");
-    setUrgency("normal");
-    setOpen(false);
+    let due_at: string | undefined;
+    if (dueDate) {
+      due_at = new Date(`${dueDate}T${dueTime || "00:00"}`).toISOString();
+    }
+    await addTask(title.trim(), category || undefined, urgency, due_at);
+    setTitle(""); setCategory(""); setUrgency("normal");
+    setDueDate(""); setDueTime(""); setShowDate(false); setOpen(false);
   };
 
   const cancel = () => {
-    setTitle("");
-    setCategory("");
-    setUrgency("normal");
-    setOpen(false);
+    setTitle(""); setCategory(""); setUrgency("normal");
+    setDueDate(""); setDueTime(""); setShowDate(false); setOpen(false);
   };
+
+  const dueDateLabel = dueDate
+    ? new Date(`${dueDate}T00:00`).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" })
+    : "날짜";
 
   return (
     <div className="mb-4">
@@ -62,37 +89,66 @@ export default function AddTaskForm() {
               </select>
             )}
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {([
                 { value: "high" as Urgency, label: "🔥 급함", active: "bg-red-900 text-red-400 border-red-700", idle: "text-stone-500 border-stone-700" },
                 { value: "normal" as Urgency, label: "보통", active: "bg-jeok-900 text-jeok-400 border-jeok-700", idle: "text-stone-500 border-stone-700" },
                 { value: "low" as Urgency, label: "언젠간", active: "bg-stone-800 text-stone-300 border-stone-600", idle: "text-stone-600 border-stone-800" },
               ]).map(({ value, label, active, idle }) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setUrgency(value)}
-                  className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-all ${urgency === value ? active : idle}`}
-                >
+                <button key={value} type="button" onClick={() => setUrgency(value)}
+                  className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-all ${urgency === value ? active : idle}`}>
                   {label}
                 </button>
               ))}
+
+              {/* 날짜 토글 버튼 */}
+              <button type="button" onClick={toggleDate}
+                className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-all
+                  ${showDate ? "bg-blue-900 text-blue-300 border-blue-700" : "text-stone-500 border-stone-700 hover:border-stone-500"}`}>
+                🗓 {showDate ? dueDateLabel : "날짜"}
+              </button>
             </div>
+
+            {/* 날짜/시간 선택 */}
+            {showDate && (
+              <div className="flex gap-2">
+                {/* 날짜 버튼 */}
+                <button type="button" onClick={() => dateRef.current?.showPicker?.() ?? dateRef.current?.click()}
+                  className="relative flex items-center gap-1.5 bg-dark-300 border border-blue-800 hover:border-blue-600 rounded-xl px-3 py-2 text-xs text-blue-300 font-medium transition-all">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <rect x="1" y="2" width="10" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
+                    <path d="M1 5h10" stroke="currentColor" strokeWidth="1.3"/>
+                    <path d="M4 1v2M8 1v2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                  </svg>
+                  {dueDateLabel}
+                  <input ref={dateRef} type="date" value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    className="absolute inset-0 opacity-0 w-full cursor-pointer" />
+                </button>
+
+                {/* 시간 버튼 */}
+                <button type="button" onClick={() => timeRef.current?.showPicker?.() ?? timeRef.current?.click()}
+                  className="relative flex items-center gap-1.5 bg-dark-300 border border-blue-800 hover:border-blue-600 rounded-xl px-3 py-2 text-xs text-blue-300 font-medium transition-all">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.3"/>
+                    <path d="M6 3.5V6l1.5 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  {dueTime || "시간"}
+                  <input ref={timeRef} type="time" value={dueTime}
+                    onChange={(e) => setDueTime(e.target.value)}
+                    className="absolute inset-0 opacity-0 w-full cursor-pointer" />
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2 justify-end pt-1">
-            <button
-              type="button"
-              onClick={cancel}
-              className="text-xs text-stone-600 hover:text-stone-400 px-3 py-1.5 rounded-full transition-colors"
-            >
+            <button type="button" onClick={cancel}
+              className="text-xs text-stone-600 hover:text-stone-400 px-3 py-1.5 rounded-full transition-colors">
               취소
             </button>
-            <button
-              type="submit"
-              disabled={!title.trim()}
-              className="text-xs bg-jeok-600 hover:bg-jeok-500 text-white px-5 py-1.5 rounded-full disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
+            <button type="submit" disabled={!title.trim()}
+              className="text-xs bg-jeok-600 hover:bg-jeok-500 text-white px-5 py-1.5 rounded-full disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
               추가
             </button>
           </div>

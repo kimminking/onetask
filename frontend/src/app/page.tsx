@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTaskStore } from "@/store/taskStore";
 import TaskList from "@/components/TaskList";
 import AddTaskForm from "@/components/AddTaskForm";
+import DoneList from "@/components/DoneList";
 
 type Tab = "todo" | "done";
 
@@ -28,8 +29,10 @@ export default function Home() {
     <div className="flex flex-col min-h-dvh bg-dark-400">
       {/* 헤더 */}
       <div className="px-6 pt-10 pb-6 bg-dark-300 border-b border-white/5">
-        <div className="lg:hidden">
-          <h1 className="text-3xl font-bold text-jeok-400 tracking-tight">onetask</h1>
+        <div>
+          <Link href="/" className="inline-flex items-center group">
+            <h1 className="text-3xl font-bold text-jeok-400 tracking-tight group-hover:text-jeok-300 transition-colors">onetask</h1>
+          </Link>
           <p className="text-stone-600 text-xs mt-1">{dateStr}</p>
         </div>
 
@@ -72,11 +75,24 @@ export default function Home() {
             <TaskList filter="todo" />
           </>
         )}
-        {tab === "done" && <TaskList filter="done" />}
+        {tab === "done" && <DoneList tasks={tasks.filter((t) => t.status === "done")} />}
       </div>
 
       {/* 하단 네비 */}
-      <div className="px-4 pb-8 pt-2 border-t border-white/5 bg-dark-300">
+      <div className="px-4 pb-8 pt-2 border-t border-white/5 bg-dark-300 flex flex-col gap-2">
+        <Link
+          href="/calendar"
+          className="flex items-center gap-4 bg-dark-200 hover:bg-dark-100 border border-white/5 hover:border-jeok-800 rounded-2xl px-5 py-4 transition-all duration-200 group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-dark-100 flex items-center justify-center text-xl">
+            📅
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-stone-200">캘린더</p>
+            <p className="text-xs text-stone-500 mt-0.5">날짜별 완료 기록</p>
+          </div>
+          <span className="ml-auto text-stone-600 group-hover:text-jeok-400 transition-colors">→</span>
+        </Link>
         <Link
           href="/words"
           className="flex items-center gap-4 bg-dark-200 hover:bg-dark-100 border border-white/5 hover:border-jeok-800 rounded-2xl px-5 py-4 transition-all duration-200 group"
@@ -86,7 +102,7 @@ export default function Home() {
           </div>
           <div>
             <p className="text-sm font-semibold text-stone-200">단어 암기장</p>
-            <p className="text-xs text-stone-500 mt-0.5">중국어 플래시카드</p>
+            <p className="text-xs text-stone-500 mt-0.5">단어 플래시카드</p>
           </div>
           <span className="ml-auto text-stone-600 group-hover:text-jeok-400 transition-colors">→</span>
         </Link>

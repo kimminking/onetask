@@ -15,6 +15,7 @@ class TaskCreate(BaseModel):
     title: str
     category: Optional[str] = None
     urgency: Urgency = Urgency.normal
+    due_at: Optional[datetime] = None
 
 
 class TaskUpdate(BaseModel):
@@ -23,10 +24,24 @@ class TaskUpdate(BaseModel):
     urgency: Optional[Urgency] = None
     status: Optional[Status] = None
     order: Optional[int] = None
+    due_at: Optional[datetime] = None
 
 
 class TaskReorder(BaseModel):
     ids: list[int]
+
+
+@router.get("/history")
+def get_task_history(year: int, month: int, db: Session = Depends(get_db)):
+    import calendar as cal
+    first_day = datetime(year, month, 1, tzinfo=timezone.utc)
+    last_day = datetime(year, month, cal.monthrange(year, month)[1], 23, 59, 59, tzinfo=timezone.utc)
+    return (
+        db.query(Task)
+        .filter(Task.status == Status.done, Task.done_at >= first_day, Task.done_at <= last_day)
+        .order_by(Task.done_at)
+        .all()
+    )
 
 
 @router.get("/")
@@ -75,6 +90,19 @@ def delete_task(task_id: int, db: Session = Depends(get_db)):
     db.delete(task)
     db.commit()
     return {"ok": True}
+
+
+@router.get("/scheduled")
+def get_scheduled_tasks(year: int, month: int, db: Session = Depends(get_db)):
+    import calendar as cal
+    first_day = datetime(year, month, 1, tzinfo=timezone.utc)
+    last_day = datetime(year, month, cal.monthrange(year, month)[1], 23, 59, 59, tzinfo=timezone.utc)
+    return (
+        db.query(Task)
+        .filter(Task.due_at >= first_day, Task.due_at <= last_day)
+        .order_by(Task.due_at)
+        .all()
+    )
 
 
 @router.post("/reorder")

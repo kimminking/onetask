@@ -7,7 +7,7 @@ interface TaskStore {
   loading: boolean;
 
   fetchAll: () => Promise<void>;
-  addTask: (title: string, category?: string, urgency?: Urgency) => Promise<void>;
+  addTask: (title: string, category?: string, urgency?: Urgency, due_at?: string) => Promise<void>;
   toggleDone: (id: number, current: Status) => Promise<void>;
   deleteTask: (id: number) => Promise<void>;
   reorderTasks: (ids: number[]) => Promise<void>;
@@ -29,8 +29,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     set({ tasks, categories, loading: false });
   },
 
-  addTask: async (title, category, urgency = "normal") => {
-    const task = await api.tasks.create({ title, category, urgency });
+  addTask: async (title, category, urgency = "normal", due_at) => {
+    const task = await api.tasks.create({ title, category, urgency, due_at });
     set((s) => ({ tasks: [...s.tasks, task] }));
   },
 

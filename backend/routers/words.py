@@ -1,3 +1,4 @@
+import random
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -64,7 +65,9 @@ def _word_with_card(word: Word, wc: Optional[WordCard]) -> dict:
         "meaning": word.meaning,
         "example_zh": word.example_zh,
         "example_ko": word.example_ko,
+        "example_pinyin": word.example_pinyin,
         "audio_path": word.audio_path,
+        "image_path": word.image_path,
         "created_at": word.created_at,
         # 카드 상태
         "state": wc.state if wc else 0,
@@ -92,14 +95,23 @@ def get_due_words(hsk_level: Optional[int] = None, db: Session = Depends(get_db)
     q = db.query(Word)
     if hsk_level:
         q = q.filter(Word.hsk_level == hsk_level)
-    words = q.order_by(Word.id).all()
+    words = q.all()
     cards = {wc.word_id: wc for wc in db.query(WordCard).all()}
-    due_words = []
+
+    review_words = []  # 복습 필요 (본 적 있음)
+    new_words = []     # 신규 (한 번도 안 봄)
+
     for w in words:
         wc = cards.get(w.id)
-        if wc is None or wc.due <= now:
-            due_words.append(_word_with_card(w, wc))
-    return due_words
+        if wc is None or wc.reps == 0:
+            new_words.append(_word_with_card(w, wc))
+        elif wc.due <= now:
+            review_words.append(_word_with_card(w, wc))
+
+    review_words.sort(key=lambda x: x["due"])  # 가장 오래 밀린 것 먼저
+    random.shuffle(new_words)                   # 신규는 랜덤
+
+    return review_words + new_words
 
 
 @router.get("/stats")

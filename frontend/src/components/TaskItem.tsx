@@ -19,7 +19,7 @@ export default function TaskItem({ task }: { task: Task }) {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.3 : 1,
+    opacity: isDragging ? 0.4 : 1,
     zIndex: isDragging ? 10 : undefined,
   };
 
@@ -34,7 +34,7 @@ export default function TaskItem({ task }: { task: Task }) {
       <button
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing text-stone-700 hover:text-stone-500 touch-none flex-shrink-0 text-lg leading-none"
+        className="cursor-grab active:cursor-grabbing active:scale-75 text-stone-700 hover:text-stone-500 touch-none flex-shrink-0 text-lg leading-none"
         tabIndex={-1}
       >
         ⠿
@@ -64,11 +64,19 @@ export default function TaskItem({ task }: { task: Task }) {
             {task.title}
           </span>
         </div>
-        {task.category && (
-          <span className="mt-1 inline-block text-[11px] text-jeok-400 bg-jeok-900 px-2 py-0.5 rounded-full">
-            {task.category}
-          </span>
-        )}
+        <div className="flex gap-1.5 flex-wrap mt-0.5">
+          {task.category && (
+            <span className="text-[11px] text-jeok-400 bg-jeok-900 px-2 py-0.5 rounded-full">
+              {task.category}
+            </span>
+          )}
+          {task.due_at && (
+            <span className="text-[11px] text-blue-400 bg-blue-950 px-2 py-0.5 rounded-full">
+              🗓 {new Date(task.due_at).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" })}{" "}
+              {new Date(task.due_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          )}
+        </div>
       </div>
 
       <button
