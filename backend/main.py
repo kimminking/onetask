@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from database import engine, Base
-from routers import tasks, categories, words, image_test, english_words, calendar_events, stats
+from routers import tasks, categories, words, image_test, english_words, calendar_events, stats, japanese_words
 
 Base.metadata.create_all(bind=engine)
 
@@ -23,6 +23,7 @@ app.include_router(image_test.router)
 app.include_router(english_words.router)
 app.include_router(calendar_events.router)
 app.include_router(stats.router)
+app.include_router(japanese_words.router)
 
 app.mount("/images", StaticFiles(directory="test_output"), name="images")
 

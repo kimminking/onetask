@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
-import { api, Word, EnglishWord } from "@/lib/api";
+import { api, Word, EnglishWord, JapaneseWord } from "@/lib/api";
 
-type Lang = "zh" | "en";
+type Lang = "zh" | "en" | "ja";
 type Mode = "lang-select" | "select" | "home" | "review" | "browse" | "today" | "daily";
 type Phase = "question" | "answer";
 
@@ -59,8 +59,10 @@ export default function WordsPage() {
   const [todayEnWords, setTodayEnWords] = useState<EnglishWord[]>([]);
   const [dailyZhWords, setDailyZhWords] = useState<Word[]>([]);
   const [dailyEnWords, setDailyEnWords] = useState<EnglishWord[]>([]);
+  const [dailyJaWords, setDailyJaWords] = useState<JapaneseWord[]>([]);
   const [dailyZhCount, setDailyZhCount] = useState<number | null>(null);
   const [dailyEnCount, setDailyEnCount] = useState<number | null>(null);
+  const [dailyJaCount, setDailyJaCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
   const reloadZh = useCallback(async (level: number) => {
@@ -83,6 +85,7 @@ export default function WordsPage() {
   useEffect(() => {
     api.words.daily().then((w) => setDailyZhCount(w.length)).catch(() => setDailyZhCount(0));
     api.englishWords.daily().then((w) => setDailyEnCount(w.length)).catch(() => setDailyEnCount(0));
+    api.japaneseWords.daily().then((w) => setDailyJaCount(w.length)).catch(() => setDailyJaCount(0));
   }, []);
 
   const startDailyZh = async () => {
@@ -99,6 +102,15 @@ export default function WordsPage() {
     const words = await api.englishWords.daily();
     setDailyEnWords(words);
     setSelectedLang("en");
+    setLoading(false);
+    setMode("daily");
+  };
+
+  const startDailyJa = async () => {
+    setLoading(true);
+    const words = await api.japaneseWords.daily();
+    setDailyJaWords(words);
+    setSelectedLang("ja");
     setLoading(false);
     setMode("daily");
   };
@@ -195,6 +207,22 @@ export default function WordsPage() {
             </div>
             {dailyEnCount !== null && dailyEnCount > 0 && (
               <span className="text-xs font-bold text-jeok-400 bg-jeok-900 px-2.5 py-1 rounded-full">{dailyEnCount}</span>
+            )}
+          </button>
+
+          <button onClick={startDailyJa} disabled={loading || dailyJaCount === 0}
+            className="flex items-center gap-4 px-5 py-5 rounded-2xl border bg-dark-200 border-white/5 hover:border-jeok-700 hover:bg-dark-100 active:scale-[0.98] transition-all text-left disabled:opacity-40 disabled:cursor-not-allowed">
+            <div className="w-12 h-12 rounded-xl bg-jeok-900 flex items-center justify-center text-xl font-bold text-jeok-300">
+              日
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-sm text-stone-100">오늘의 일본어</p>
+              <p className="text-xs mt-0.5 text-stone-500">
+                {dailyJaCount === null ? "불러오는 중..." : dailyJaCount === 0 ? "오늘 할 것 없음 ✓" : `${dailyJaCount}개 준비됨`}
+              </p>
+            </div>
+            {dailyJaCount !== null && dailyJaCount > 0 && (
+              <span className="text-xs font-bold text-jeok-400 bg-jeok-900 px-2.5 py-1 rounded-full">{dailyJaCount}</span>
             )}
           </button>
 
@@ -319,6 +347,12 @@ export default function WordsPage() {
     if (selectedLang === "zh") {
       return <ZhReviewSession words={dailyZhWords} onDone={() => {
         api.words.daily().then((w) => setDailyZhCount(w.length)).catch(() => {});
+        setMode("lang-select");
+      }} onBack={() => setMode("lang-select")} />;
+    }
+    if (selectedLang === "ja") {
+      return <JaReviewSession words={dailyJaWords} onDone={() => {
+        api.japaneseWords.daily().then((w) => setDailyJaCount(w.length)).catch(() => {});
         setMode("lang-select");
       }} onBack={() => setMode("lang-select")} />;
     }
@@ -919,6 +953,146 @@ function ReviewDoneScreen({ results, onDone }: { results: { knew: number; missed
     </div>
   );
 }
+
+/* ══════════════════════════════════════════════════════════════
+   일본어 컴포넌트
+══════════════════════════════════════════════════════════════ */
+
+const SWIPE_THRESHOLD_JA = 80;
+
+function speakJapanese(text: string) {
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = "ja-JP";
+  utter.rate = 0.9;
+  window.speechSynthesis.speak(utter);
+}
+
+function JaSwipeCard({ word, flipped, onFlip, onSwipe }: {
+  word: JapaneseWord; flipped: boolean; onFlip: () => void; onSwipe: (knew: boolean) => void;
+}) {
+  const firstRender = useRef(true);
+  useEffect(() => {
+    speakJapanese(word.reading);
+    return () => window.speechSynthesis.cancel();
+  }, []);
+  useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return; }
+    if (flipped && word.example_jp) speakJapanese(word.example_jp);
+    else speakJapanese(word.reading);
+  }, [flipped]);
+
+  const x = useMotionValue(0);
+  const rotate = useTransform(x, [-220, 220], [-18, 18]);
+  const rightOpacity = useTransform(x, [20, SWIPE_THRESHOLD_JA], [0, 1]);
+  const leftOpacity  = useTransform(x, [-SWIPE_THRESHOLD_JA, -20], [1, 0]);
+
+  const handleDragEnd = (_: unknown, info: { offset: { x: number } }) => {
+    if (info.offset.x > SWIPE_THRESHOLD_JA) {
+      animate(x, 600, { duration: 0.25 });
+      setTimeout(() => onSwipe(true), 200);
+    } else if (info.offset.x < -SWIPE_THRESHOLD_JA) {
+      animate(x, -600, { duration: 0.25 });
+      setTimeout(() => onSwipe(false), 200);
+    } else {
+      animate(x, 0, { type: "spring", stiffness: 300, damping: 25 });
+    }
+  };
+
+  return (
+    <div className="relative w-full select-none" style={{ minHeight: "300px" }}>
+      <motion.div style={{ opacity: rightOpacity }}
+        className="absolute inset-0 rounded-3xl border-2 border-green-500 bg-green-950/30 flex items-center justify-center z-0 pointer-events-none">
+        <span className="text-green-400 text-3xl font-black tracking-widest rotate-[-12deg] border-4 border-green-500 px-4 py-1 rounded-xl">알았음</span>
+      </motion.div>
+      <motion.div style={{ opacity: leftOpacity }}
+        className="absolute inset-0 rounded-3xl border-2 border-jeok-500 bg-jeok-950/30 flex items-center justify-center z-0 pointer-events-none">
+        <span className="text-jeok-400 text-3xl font-black tracking-widest rotate-[12deg] border-4 border-jeok-500 px-4 py-1 rounded-xl">몰랐음</span>
+      </motion.div>
+      <motion.div drag="x" dragElastic={0.8} style={{ x, rotate, position: "relative", zIndex: 10 }}
+        onDragEnd={handleDragEnd} onClick={onFlip}
+        className="cursor-grab active:cursor-grabbing" whileTap={{ scale: 0.98 }}>
+        <div style={{ perspective: "1200px" }}>
+          <div className="relative w-full transition-transform duration-[380ms]"
+            style={{ transformStyle: "preserve-3d", transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)", minHeight: "300px" }}>
+            {/* 앞면: 일본어 표기 */}
+            <div className="absolute inset-0 bg-dark-200 border border-white/5 rounded-3xl flex flex-col items-center justify-center gap-4 p-8"
+              style={{ backfaceVisibility: "hidden" }}>
+              {word.jlpt_level && (
+                <span className="absolute top-3 right-4 text-xs text-stone-600 font-medium z-20">{word.jlpt_level}</span>
+              )}
+              <p className="text-6xl font-bold text-stone-100 text-center">{word.expression}</p>
+              {word.expression !== word.reading && (
+                <p className="text-lg text-stone-400 font-light">{word.reading}</p>
+              )}
+              <CopyButton text={word.expression} />
+              <p className="text-xs text-stone-700 mt-2">탭해서 뜻 보기 →</p>
+            </div>
+            {/* 뒷면: 한국어 뜻 */}
+            <div className="absolute inset-0 bg-dark-300 border border-jeok-900 rounded-3xl flex flex-col items-center justify-center gap-3 p-8"
+              style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
+              <p className="text-2xl font-bold text-stone-100 text-center leading-relaxed">{word.meaning}</p>
+              <p className="text-stone-500 text-base">{word.expression}</p>
+              {word.reading !== word.expression && (
+                <p className="text-stone-600 text-sm">{word.reading}</p>
+              )}
+              {word.example_jp && (
+                <div className="bg-black/30 rounded-xl px-4 py-2.5 mt-1 w-full">
+                  <p className="text-sm text-stone-200 leading-relaxed text-center">{word.example_jp}</p>
+                  {word.example_ko && (
+                    <p className="text-xs text-stone-500 text-center mt-1.5 leading-relaxed">{word.example_ko}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function JaReviewSession({ words, onDone, onBack }: { words: JapaneseWord[]; onDone: () => void; onBack: () => void }) {
+  const [index, setIndex] = useState(0);
+  const [phase, setPhase] = useState<Phase>("question");
+  const [results, setResults] = useState({ knew: 0, missed: 0 });
+  const [done, setDone] = useState(false);
+  const [flipped, setFlipped] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [cardKey, setCardKey] = useState(0);
+  const current = words[index];
+
+  const reveal = () => { setFlipped((f) => !f); if (phase === "question") setPhase("answer"); };
+  const answer = async (knew: boolean) => {
+    if (busy) return;
+    setBusy(true);
+    await api.japaneseWords.review(current.id, knew);
+    setResults((r) => ({ knew: r.knew + (knew ? 1 : 0), missed: r.missed + (knew ? 0 : 1) }));
+    const next = index + 1;
+    if (next >= words.length) { setDone(true); setBusy(false); return; }
+    setTimeout(() => { setIndex(next); setPhase("question"); setFlipped(false); setCardKey((k) => k + 1); setBusy(false); }, 280);
+  };
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (phase === "question" && e.key === " ") { e.preventDefault(); reveal(); }
+      if (!busy) {
+        if (e.key === "ArrowRight" || e.key === "o") answer(true);
+        if (e.key === "ArrowLeft"  || e.key === "x") answer(false);
+      }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [phase, index, busy]);
+
+  if (done) return <ReviewDoneScreen results={results} onDone={onDone} />;
+  return (
+    <ReviewLayout index={index} total={words.length} onBack={onBack} phase={phase} onReveal={reveal} onAnswer={answer} busy={busy}>
+      <JaSwipeCard key={cardKey} word={current} flipped={flipped} onFlip={reveal} onSwipe={answer} />
+    </ReviewLayout>
+  );
+}
+
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);

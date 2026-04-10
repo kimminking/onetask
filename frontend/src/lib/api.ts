@@ -28,6 +28,22 @@ export interface Category {
   name: string;
 }
 
+export interface JapaneseWord {
+  id: number;
+  expression: string;
+  reading: string;
+  meaning: string;
+  jlpt_level: string | null;
+  example_jp: string | null;
+  example_ko: string | null;
+  state: number;
+  reps: number;
+  lapses: number;
+  due: string;
+  is_due: boolean;
+  is_favorite: boolean;
+}
+
 export interface EnglishWord {
   id: number;
   word: string;
@@ -53,6 +69,7 @@ export interface Word {
   example_pinyin: string | null;
   audio_path: string | null;
   image_path: string | null;
+  hsk_level: number | null;
   created_at: string;
   state: number;       // 0=New 1=Learning 2=Review 3=Relearning
   reps: number;
@@ -154,5 +171,19 @@ export const api = {
       req<{ word_id: number; is_favorite: boolean }>(`/english-words/${id}/favorite`, { method: "POST" }),
     favorites: (level?: string) =>
       req<EnglishWord[]>(`/english-words/favorites${level ? `?level=${level}` : ""}`),
+  },
+  japaneseWords: {
+    list: (jlpt_level?: string) => req<JapaneseWord[]>(`/japanese-words/list${jlpt_level ? `?jlpt_level=${jlpt_level}` : ""}`),
+    due: (jlpt_level?: string) => req<JapaneseWord[]>(`/japanese-words/due${jlpt_level ? `?jlpt_level=${jlpt_level}` : ""}`),
+    stats: (jlpt_level?: string) => req<{ total: number; reviewed: number; new: number; due: number; today: number }>(`/japanese-words/stats${jlpt_level ? `?jlpt_level=${jlpt_level}` : ""}`),
+    today: (jlpt_level?: string) => req<JapaneseWord[]>(`/japanese-words/today${jlpt_level ? `?jlpt_level=${jlpt_level}` : ""}`),
+    daily: () => req<JapaneseWord[]>("/japanese-words/daily"),
+    review: (id: number, knew: boolean) =>
+      req<{ word_id: number; knew: boolean; next_due: string; state: number; reps: number }>(
+        `/japanese-words/${id}/review`,
+        { method: "POST", body: JSON.stringify({ knew }) }
+      ),
+    favorite: (id: number) =>
+      req<{ word_id: number; is_favorite: boolean }>(`/japanese-words/${id}/favorite`, { method: "POST" }),
   },
 };

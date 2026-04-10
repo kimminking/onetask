@@ -79,6 +79,35 @@ class WordCard(Base):
     lapses = Column(Integer, default=0, nullable=False)     # 틀린 횟수
 
 
+class JapaneseWord(Base):
+    __tablename__ = "japanese_words"
+
+    id = Column(Integer, primary_key=True, index=True)
+    expression = Column(String(100), nullable=False)   # 한자 표기 (없으면 kana)
+    reading = Column(String(100), nullable=False)      # 히라가나 읽기
+    meaning = Column(String(500), nullable=False)      # 한국어 뜻
+    jlpt_level = Column(String(2), nullable=True)      # N5/N4/N3/N2/N1
+    example_jp = Column(String, nullable=True)
+    example_ko = Column(String, nullable=True)
+    is_favorite = Column(Boolean, default=False, nullable=False, server_default="false")
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class JapaneseWordCard(Base):
+    __tablename__ = "japanese_word_cards"
+
+    id = Column(Integer, primary_key=True, index=True)
+    word_id = Column(Integer, ForeignKey("japanese_words.id", ondelete="CASCADE"), unique=True, nullable=False)
+    state = Column(Integer, default=0, nullable=False)
+    step = Column(Integer, default=0, nullable=True)
+    stability = Column(Float, default=0.0, nullable=False)
+    difficulty = Column(Float, default=0.0, nullable=False)
+    due = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    last_review = Column(DateTime(timezone=True), nullable=True)
+    reps = Column(Integer, default=0, nullable=False)
+    lapses = Column(Integer, default=0, nullable=False)
+
+
 class EnglishWord(Base):
     __tablename__ = "english_words"
 
