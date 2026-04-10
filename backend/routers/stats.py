@@ -4,12 +4,13 @@ from sqlalchemy import func
 from datetime import datetime, timezone, timedelta
 
 from database import get_db
-from models import Word, WordCard, EnglishWord, EnglishWordCard
+from models import Word, WordCard, EnglishWord, EnglishWordCard, JapaneseWord, JapaneseWordCard
 
 router = APIRouter(prefix="/stats", tags=["stats"])
 
 HSK_LEVELS = [3, 4, 5, 6]
 EN_LEVELS  = ["A1", "A2", "B1", "B2", "C1"]
+JA_LEVELS  = ["N5", "N4", "N3", "N2", "N1"]
 
 
 def calc_streak(last_reviews: list[datetime]) -> int:
@@ -71,11 +72,33 @@ def get_overview(db: Session = Depends(get_db)):
             "mastered": mastered,
         })
 
+    # ── 일본어 ──
+    ja_cards = db.query(JapaneseWordCard).all()
+    ja_today = sum(1 for c in ja_cards if c.last_review and c.last_review >= today_start)
+    ja_streak = calc_streak([c.last_review for c in ja_cards if c.last_review])
+
+    ja_levels = []
+    for lvl in JA_LEVELS:
+        words = db.query(JapaneseWord).filter(JapaneseWord.jlpt_level == lvl).all()
+        wids = {w.id for w in words}
+        cards = [c for c in ja_cards if c.word_id in wids]
+        reviewed = len({c.word_id for c in cards if c.reps > 0})
+        mastered = sum(1 for c in cards if c.state == 2)
+        ja_levels.append({
+            "level": lvl,
+            "total": len(words),
+            "reviewed": reviewed,
+            "mastered": mastered,
+        })
+
     return {
         "zh_streak": zh_streak,
         "en_streak": en_streak,
+        "ja_streak": ja_streak,
         "zh_today": zh_today,
         "en_today": en_today,
+        "ja_today": ja_today,
         "zh_levels": zh_levels,
         "en_levels": en_levels,
+        "ja_levels": ja_levels,
     }

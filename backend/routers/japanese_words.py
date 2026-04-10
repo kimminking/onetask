@@ -145,6 +145,18 @@ def get_today_words(jlpt_level: Optional[str] = None, db: Session = Depends(get_
     return [_word_with_card(word_id_map[wc.word_id], wc) for wc in cards]
 
 
+@router.get("/favorites")
+def get_favorites(jlpt_level: Optional[str] = None, db: Session = Depends(get_db)):
+    q = db.query(JapaneseWord).filter(JapaneseWord.is_favorite == True)
+    if jlpt_level:
+        q = q.filter(JapaneseWord.jlpt_level == jlpt_level)
+    words = q.order_by(JapaneseWord.id).all()
+    word_ids = {w.id for w in words}
+    cards = {wc.word_id: wc for wc in db.query(JapaneseWordCard).filter(
+        JapaneseWordCard.word_id.in_(word_ids)).all()}
+    return [_word_with_card(w, cards.get(w.id)) for w in words]
+
+
 @router.get("/list")
 def get_words(jlpt_level: Optional[str] = None, db: Session = Depends(get_db)):
     q = db.query(JapaneseWord)

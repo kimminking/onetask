@@ -2,6 +2,46 @@
 
 ---
 
+## 2026-04-10 (세션 8)
+### 완료
+- 일본어 단어장 시스템 구축
+  - `JapaneseWord` + `JapaneseWordCard` 모델, DB 테이블 생성
+  - `/japanese-words` 라우터: daily/due/stats/today/list/review/favorite/favorites 엔드포인트
+  - `import_japanese.py`: jamsinclair/open-anki-jlpt-decks CSV 다운로드 + GoogleTranslator en→ko 번역 (N5~N1 8,131개, 진행 중)
+  - `add_japanese_examples.py`: Tatoeba jpn_sentences 기반 예문 생성 스크립트 (신규)
+- 오늘의 학습 (Daily Quota) 기능
+  - `/words/daily`: 전체 due 복습 + HSK 3~5 신규 15개 + HSK 1~2 신규 2개
+  - `/english-words/daily`: 전체 due 복습 + 신규 15개
+  - `/japanese-words/daily`: 전체 due 복습 + N5→N4 우선순위 신규 15개
+  - 단어장 메인에 "오늘의 중국어/영어/일본어" 버튼 + 개수 배지
+- 단어 카드 등급 배지: HSK 레벨(중국어), CEFR 레벨(영어), JLPT 레벨(일본어) 카드 오른쪽 위 표시
+- 일본어 레벨별 공부 기능
+  - JLPT N5~N1 레벨 선택 화면
+  - `JaSwipeCard`: 한자 앞면, 요미가나, 한국어 뜻/예문 뒷면, TTS ja-JP
+  - `JaReviewSession`: FSRS 기반 플래시카드 세션
+  - `JaBrowseMode`: 일본어 단어 목록 브라우즈 + 즐겨찾기
+- `showPicker()` NotAllowedError 수정: try/catch 폴백으로 `.click()` 사용
+- stats 페이지 일본어 통계 추가 (ja_streak, ja_today, ja_levels)
+
+### 변경된 파일
+- `backend/models.py` — JapaneseWord·JapaneseWordCard 모델 추가
+- `backend/routers/japanese_words.py` — 신규: 일본어 단어 전체 라우터
+- `backend/routers/words.py` — daily·favorite·favorites 엔드포인트, is_favorite 응답 추가
+- `backend/routers/english_words.py` — daily·favorite·favorites 엔드포인트, is_favorite 응답 추가
+- `backend/routers/stats.py` — JapaneseWord·JapaneseWordCard 임포트, ja_streak/ja_today/ja_levels 추가
+- `backend/main.py` — japanese_words 라우터 등록
+- `backend/import_japanese.py` — 신규: JLPT N5~N1 단어 import 스크립트
+- `backend/add_japanese_examples.py` — 신규: Tatoeba 일본어 예문 생성 스크립트
+- `frontend/src/lib/api.ts` — JapaneseWord 인터페이스, japaneseWords API 객체, favorites 메서드 추가
+- `frontend/src/app/words/page.tsx` — JA_LEVELS 상수, 일본어 상태/함수, JaBrowseMode·JaSwipeCard·JaReviewSession 컴포넌트, 레벨별 공부 일본어 버튼
+
+### 다음 세션
+- `import_japanese.py` 완료 확인 후 `add_japanese_examples.py` 실행
+- 즐겨찾기 단어만 복습하는 모드
+- 푸시 알림 + FSRS 서버사이드 스케줄링 (2단계)
+
+---
+
 ## 2026-04-10 (세션 7)
 ### 완료
 - HSK 1~2 단어 삽입 및 언락

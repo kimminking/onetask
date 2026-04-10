@@ -31,6 +31,14 @@ const EN_LEVELS = [
   { value: "C1", label: "C1", desc: "고급" },
 ];
 
+const JA_LEVELS = [
+  { value: "N5", label: "JLPT N5", desc: "초급" },
+  { value: "N4", label: "JLPT N4", desc: "초중급" },
+  { value: "N3", label: "JLPT N3", desc: "중급" },
+  { value: "N2", label: "JLPT N2", desc: "중고급" },
+  { value: "N1", label: "JLPT N1", desc: "고급" },
+];
+
 function formatDue(due: string): string {
   const diff = new Date(due).getTime() - Date.now();
   const mins = Math.round(diff / 60000);
@@ -50,13 +58,17 @@ export default function WordsPage() {
   const [selectedLang, setSelectedLang] = useState<Lang>("zh");
   const [selectedZhLevel, setSelectedZhLevel] = useState<number>(3);
   const [selectedEnLevel, setSelectedEnLevel] = useState<string>("B1");
+  const [selectedJaLevel, setSelectedJaLevel] = useState<string>("N5");
   const [stats, setStats] = useState({ total: 0, reviewed: 0, new: 0, due: 0, today: 0 });
   const [zhWords, setZhWords] = useState<Word[]>([]);
   const [enWords, setEnWords] = useState<EnglishWord[]>([]);
+  const [jaWords, setJaWords] = useState<JapaneseWord[]>([]);
   const [dueZhWords, setDueZhWords] = useState<Word[]>([]);
   const [dueEnWords, setDueEnWords] = useState<EnglishWord[]>([]);
+  const [dueJaWords, setDueJaWords] = useState<JapaneseWord[]>([]);
   const [todayZhWords, setTodayZhWords] = useState<Word[]>([]);
   const [todayEnWords, setTodayEnWords] = useState<EnglishWord[]>([]);
+  const [todayJaWords, setTodayJaWords] = useState<JapaneseWord[]>([]);
   const [dailyZhWords, setDailyZhWords] = useState<Word[]>([]);
   const [dailyEnWords, setDailyEnWords] = useState<EnglishWord[]>([]);
   const [dailyJaWords, setDailyJaWords] = useState<JapaneseWord[]>([]);
@@ -78,6 +90,14 @@ export default function WordsPage() {
     const [s, w] = await Promise.all([api.englishWords.stats(level), api.englishWords.list(level)]);
     setStats(s);
     setEnWords(w);
+    setLoading(false);
+  }, []);
+
+  const reloadJa = useCallback(async (level: string) => {
+    setLoading(true);
+    const [s, w] = await Promise.all([api.japaneseWords.stats(level), api.japaneseWords.list(level)]);
+    setStats(s);
+    setJaWords(w);
     setLoading(false);
   }, []);
 
@@ -132,10 +152,19 @@ export default function WordsPage() {
     reloadEn(level);
   };
 
+  const selectJaLevel = (level: string) => {
+    setSelectedJaLevel(level);
+    setMode("home");
+    reloadJa(level);
+  };
+
   const startReview = async () => {
     if (selectedLang === "zh") {
       const due = await api.words.due(selectedZhLevel);
       setDueZhWords(due);
+    } else if (selectedLang === "ja") {
+      const due = await api.japaneseWords.due(selectedJaLevel);
+      setDueJaWords(due);
     } else {
       const due = await api.englishWords.due(selectedEnLevel);
       setDueEnWords(due);
@@ -147,6 +176,9 @@ export default function WordsPage() {
     if (selectedLang === "zh") {
       const words = await api.words.today(selectedZhLevel);
       setTodayZhWords(words);
+    } else if (selectedLang === "ja") {
+      const words = await api.japaneseWords.today(selectedJaLevel);
+      setTodayJaWords(words);
     } else {
       const words = await api.englishWords.today(selectedEnLevel);
       setTodayEnWords(words);
@@ -156,6 +188,7 @@ export default function WordsPage() {
 
   const onReviewDone = () => {
     if (selectedLang === "zh") reloadZh(selectedZhLevel);
+    else if (selectedLang === "ja") reloadJa(selectedJaLevel);
     else reloadEn(selectedEnLevel);
     setMode("home");
   };
@@ -252,6 +285,18 @@ export default function WordsPage() {
             </div>
             <span className="text-stone-700 text-sm">→</span>
           </button>
+
+          <button onClick={() => selectLang("ja")}
+            className="flex items-center gap-4 px-5 py-4 rounded-2xl border bg-dark-200 border-white/5 hover:border-stone-700 hover:bg-dark-100 active:scale-[0.98] transition-all text-left">
+            <div className="w-10 h-10 rounded-xl bg-dark-100 flex items-center justify-center text-lg font-bold text-stone-500">
+              日
+            </div>
+            <div className="flex-1">
+              <p className="text-sm text-stone-300">일본어 레벨 선택</p>
+              <p className="text-xs mt-0.5 text-stone-600">JLPT N5~N1 · 8,131개</p>
+            </div>
+            <span className="text-stone-700 text-sm">→</span>
+          </button>
         </div>
       </div>
     );
@@ -306,7 +351,7 @@ export default function WordsPage() {
     }
 
     /* 영어 레벨 선택 */
-    return (
+    if (selectedLang === "en") return (
       <div className="flex flex-col min-h-dvh bg-dark-400">
         <div className="px-6 pt-10 pb-6 bg-dark-300 border-b border-white/5">
           <div className="flex items-center gap-3">
@@ -329,6 +374,42 @@ export default function WordsPage() {
             >
               <div className="w-12 h-12 rounded-xl bg-jeok-900 flex items-center justify-center font-bold text-base text-jeok-400" style={{ fontFamily: "'Outfit', sans-serif" }}>
                 {label}
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-base text-stone-100">{label}</p>
+                <p className="text-xs mt-0.5 text-stone-500">{desc}</p>
+              </div>
+              <span className="text-stone-600 text-sm">→</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+
+    /* 일본어 레벨 선택 */
+    return (
+      <div className="flex flex-col min-h-dvh bg-dark-400">
+        <div className="px-6 pt-10 pb-6 bg-dark-300 border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMode("lang-select")}
+              className="w-8 h-8 rounded-xl bg-dark-200 hover:bg-dark-100 flex items-center justify-center text-stone-400 hover:text-stone-200 transition-all"
+            >
+              ←
+            </button>
+            <h1 className="text-2xl font-bold text-stone-100">일본어</h1>
+          </div>
+          <p className="text-stone-500 text-sm mt-3">레벨을 선택하세요</p>
+        </div>
+        <div className="flex-1 px-4 py-6 flex flex-col gap-3">
+          {JA_LEVELS.map(({ value, label, desc }) => (
+            <button
+              key={value}
+              onClick={() => selectJaLevel(value)}
+              className="flex items-center gap-4 px-5 py-5 rounded-2xl border bg-dark-200 border-white/5 hover:border-jeok-700 hover:bg-dark-100 active:scale-[0.98] transition-all text-left"
+            >
+              <div className="w-12 h-12 rounded-xl bg-jeok-900 flex items-center justify-center font-bold text-base text-jeok-400">
+                {value}
               </div>
               <div className="flex-1">
                 <p className="font-bold text-base text-stone-100">{label}</p>
@@ -367,11 +448,17 @@ export default function WordsPage() {
     if (selectedLang === "zh") {
       return <ZhReviewSession words={dueZhWords} onDone={onReviewDone} onBack={() => setMode("home")} />;
     }
+    if (selectedLang === "ja") {
+      return <JaReviewSession words={dueJaWords} onDone={onReviewDone} onBack={() => setMode("home")} />;
+    }
     return <EnReviewSession words={dueEnWords} onDone={onReviewDone} onBack={() => setMode("home")} />;
   }
   if (mode === "browse") {
     if (selectedLang === "zh") {
       return <ZhBrowseMode words={zhWords} onBack={() => setMode("home")} />;
+    }
+    if (selectedLang === "ja") {
+      return <JaBrowseMode words={jaWords} onBack={() => setMode("home")} />;
     }
     return <EnBrowseMode words={enWords} onBack={() => setMode("home")} />;
   }
@@ -379,15 +466,22 @@ export default function WordsPage() {
     if (selectedLang === "zh") {
       return <ZhBrowseMode words={todayZhWords} title="오늘 공부한 단어" onBack={() => setMode("home")} />;
     }
+    if (selectedLang === "ja") {
+      return <JaBrowseMode words={todayJaWords} title="오늘 공부한 단어" onBack={() => setMode("home")} />;
+    }
     return <EnBrowseMode words={todayEnWords} title="오늘 공부한 단어" onBack={() => setMode("home")} />;
   }
 
   /* ── 레벨 홈 화면 ── */
   const levelLabel = selectedLang === "zh"
     ? `HSK ${selectedZhLevel}`
+    : selectedLang === "ja"
+    ? `JLPT ${selectedJaLevel}`
     : selectedEnLevel;
   const levelDesc = selectedLang === "zh"
     ? HSK_LEVELS.find(l => l.value === selectedZhLevel)?.desc
+    : selectedLang === "ja"
+    ? JA_LEVELS.find(l => l.value === selectedJaLevel)?.desc
     : EN_LEVELS.find(l => l.value === selectedEnLevel)?.desc;
 
   return (
@@ -874,6 +968,66 @@ function EnBrowseMode({ words, onBack, title = "전체 단어" }: { words: Engli
             {w.example_en && (
               <div className="mt-2.5 pt-2.5 border-t border-white/5 space-y-1">
                 <p className="text-xs text-stone-400 italic leading-relaxed">{w.example_en}</p>
+                {w.example_ko && <p className="text-xs text-stone-600 leading-relaxed">{w.example_ko}</p>}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function JaBrowseMode({ words, onBack, title = "전체 단어" }: { words: JapaneseWord[]; onBack: () => void; title?: string }) {
+  const [query, setQuery] = useState("");
+  const [favs, setFavs] = useState<Record<number, boolean>>(() =>
+    Object.fromEntries(words.map((w) => [w.id, w.is_favorite]))
+  );
+
+  const toggleFav = async (id: number) => {
+    const result = await api.japaneseWords.favorite(id);
+    setFavs((f) => ({ ...f, [id]: result.is_favorite }));
+  };
+
+  const filtered = query
+    ? words.filter((w) =>
+        w.expression.includes(query) ||
+        w.reading.includes(query) ||
+        w.meaning.includes(query))
+    : words;
+
+  return (
+    <div className="flex flex-col min-h-dvh bg-dark-400">
+      <div className="px-6 pt-14 pb-4 bg-dark-300 border-b border-white/5">
+        <button onClick={onBack} className="text-stone-600 text-xs mb-3 flex items-center gap-1 hover:text-stone-400 transition-colors">← 돌아가기</button>
+        <h2 className="text-xl font-bold text-stone-100 mb-3">{title} <span className="text-stone-500 font-normal text-sm">{filtered.length}개</span></h2>
+        <input value={query} onChange={(e) => setQuery(e.target.value)}
+          placeholder="표기 · 읽기 · 뜻 검색..."
+          className="w-full bg-dark-200 border border-stone-700 focus:border-jeok-600 rounded-xl px-4 py-2.5 text-sm text-stone-200 placeholder-stone-600 outline-none transition-colors" />
+      </div>
+      <div className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
+        {filtered.map((w) => (
+          <div key={w.id} className="bg-dark-200 border border-white/5 rounded-2xl px-5 py-4">
+            <div className="flex items-center gap-2.5">
+              <span className="text-2xl font-bold text-stone-100">{w.expression}</span>
+              {w.expression !== w.reading && (
+                <span className="text-sm text-stone-500 font-light">{w.reading}</span>
+              )}
+              {w.jlpt_level && (
+                <span className="text-xs text-jeok-600 border border-jeok-900 rounded px-1.5 py-0.5">{w.jlpt_level}</span>
+              )}
+              <StarButton isFav={!!favs[w.id]} onToggle={() => toggleFav(w.id)} />
+            </div>
+            <p className="text-sm text-stone-300 font-medium mt-1 leading-snug">{w.meaning}</p>
+            <div className="flex items-center gap-2 mt-2">
+              <span className={`text-xs font-medium ${STATE_COLOR[w.state]}`}>{STATE_LABEL[w.state]}</span>
+              {w.reps > 0 && <span className="text-xs text-stone-700">· 복습 {w.reps}회</span>}
+              {w.lapses > 0 && <span className="text-xs text-jeok-700">· 틀림 {w.lapses}회</span>}
+              <span className="text-xs text-stone-700 ml-auto">{formatDue(w.due)}</span>
+            </div>
+            {w.example_jp && (
+              <div className="mt-2.5 pt-2.5 border-t border-white/5 space-y-1">
+                <p className="text-xs text-stone-400 leading-relaxed">{w.example_jp}</p>
                 {w.example_ko && <p className="text-xs text-stone-600 leading-relaxed">{w.example_ko}</p>}
               </div>
             )}

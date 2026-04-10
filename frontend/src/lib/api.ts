@@ -185,5 +185,7 @@ export const api = {
       ),
     favorite: (id: number) =>
       req<{ word_id: number; is_favorite: boolean }>(`/japanese-words/${id}/favorite`, { method: "POST" }),
+    favorites: (jlpt_level?: string) =>
+      req<JapaneseWord[]>(`/japanese-words/favorites${jlpt_level ? `?jlpt_level=${jlpt_level}` : ""}`),
   },
 };
