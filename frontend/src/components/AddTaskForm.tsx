@@ -113,7 +113,7 @@ export default function AddTaskForm() {
             {showDate && (
               <div className="flex gap-2">
                 {/* 날짜 버튼 */}
-                <button type="button" onClick={() => dateRef.current?.showPicker?.() ?? dateRef.current?.click()}
+                <button type="button" onClick={() => { try { dateRef.current?.showPicker?.(); } catch { dateRef.current?.click(); } }}
                   className="relative flex items-center gap-1.5 bg-dark-300 border border-blue-800 hover:border-blue-600 rounded-xl px-3 py-2 text-xs text-blue-300 font-medium transition-all">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                     <rect x="1" y="2" width="10" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
@@ -127,7 +127,7 @@ export default function AddTaskForm() {
                 </button>
 
                 {/* 시간 버튼 */}
-                <button type="button" onClick={() => timeRef.current?.showPicker?.() ?? timeRef.current?.click()}
+                <button type="button" onClick={() => { try { timeRef.current?.showPicker?.(); } catch { timeRef.current?.click(); } }}
                   className="relative flex items-center gap-1.5 bg-dark-300 border border-blue-800 hover:border-blue-600 rounded-xl px-3 py-2 text-xs text-blue-300 font-medium transition-all">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                     <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.3"/>

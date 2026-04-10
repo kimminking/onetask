@@ -130,6 +130,29 @@ def get_today_words(level: Optional[str] = None, db: Session = Depends(get_db)):
     return [_word_with_card(word_id_map[wc.word_id], wc) for wc in cards]
 
 
+@router.get("/daily")
+def get_daily_words(new_count: int = 15, db: Session = Depends(get_db)):
+    """오늘의 영어: 전 레벨 복습 due 카드 + 신규 N개 랜덤"""
+    now = datetime.now(timezone.utc)
+    all_words = {w.id: w for w in db.query(EnglishWord).all()}
+    all_cards = {wc.word_id: wc for wc in db.query(EnglishWordCard).all()}
+
+    review_words = []
+    new_words = []
+
+    for word in all_words.values():
+        wc = all_cards.get(word.id)
+        if wc and wc.reps > 0:
+            if wc.due <= now:
+                review_words.append(_word_with_card(word, wc))
+        else:
+            new_words.append(_word_with_card(word, wc))
+
+    review_words.sort(key=lambda x: x["due"])
+    random.shuffle(new_words)
+    return review_words + new_words[:new_count]
+
+
 @router.post("/{word_id}/favorite")
 def toggle_favorite(word_id: int, db: Session = Depends(get_db)):
     word = db.query(EnglishWord).filter(EnglishWord.id == word_id).first()

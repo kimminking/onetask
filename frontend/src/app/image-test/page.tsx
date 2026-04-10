@@ -60,7 +60,7 @@ export default function ImageTestPage() {
             : r
         )
       );
-    } catch (e) {
+    } catch {
       setResults((prev) =>
         prev.map((r) =>
           r.model_key === modelKey ? { ...r, loading: false, error: "요청 실패" } : r

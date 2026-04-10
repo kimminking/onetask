@@ -123,6 +123,7 @@ export const api = {
         `/words/${id}/review`,
         { method: "POST", body: JSON.stringify({ knew }) }
       ),
+    daily: () => req<Word[]>("/words/daily"),
     favorite: (id: number) =>
       req<{ word_id: number; is_favorite: boolean }>(`/words/${id}/favorite`, { method: "POST" }),
     favorites: (hsk_level?: number) =>
@@ -148,6 +149,7 @@ export const api = {
         `/english-words/${id}/review`,
         { method: "POST", body: JSON.stringify({ knew }) }
       ),
+    daily: () => req<EnglishWord[]>("/english-words/daily"),
     favorite: (id: number) =>
       req<{ word_id: number; is_favorite: boolean }>(`/english-words/${id}/favorite`, { method: "POST" }),
     favorites: (level?: string) =>

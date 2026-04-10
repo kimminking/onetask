@@ -185,6 +185,39 @@ def review_word(word_id: int, body: ReviewRequest, db: Session = Depends(get_db)
     }
 
 
+@router.get("/daily")
+def get_daily_words(
+    new_35: int = 15,   # HSK 3~5 신규 단어 수
+    new_12: int = 2,    # HSK 1~2 신규 단어 수
+    db: Session = Depends(get_db)
+):
+    """오늘의 중국어: 전 레벨 복습 due 카드 + HSK 3~5 신규 N개 + HSK 1~2 신규 2개"""
+    now = datetime.now(timezone.utc)
+    all_words = {w.id: w for w in db.query(Word).all()}
+    all_cards = {wc.word_id: wc for wc in db.query(WordCard).all()}
+
+    review_words = []
+    new_35_words = []
+    new_12_words = []
+
+    for word in all_words.values():
+        wc = all_cards.get(word.id)
+        if wc and wc.reps > 0:
+            if wc.due <= now:
+                review_words.append(_word_with_card(word, wc))
+        else:
+            if word.hsk_level in (3, 4, 5):
+                new_35_words.append(_word_with_card(word, wc))
+            elif word.hsk_level in (1, 2):
+                new_12_words.append(_word_with_card(word, wc))
+
+    review_words.sort(key=lambda x: x["due"])
+    random.shuffle(new_35_words)
+    random.shuffle(new_12_words)
+
+    return review_words + new_35_words[:new_35] + new_12_words[:new_12]
+
+
 @router.post("/{word_id}/favorite")
 def toggle_favorite(word_id: int, db: Session = Depends(get_db)):
     word = db.query(Word).filter(Word.id == word_id).first()

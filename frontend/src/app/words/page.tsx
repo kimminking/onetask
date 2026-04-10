@@ -6,7 +6,7 @@ import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { api, Word, EnglishWord } from "@/lib/api";
 
 type Lang = "zh" | "en";
-type Mode = "lang-select" | "select" | "home" | "review" | "browse" | "today";
+type Mode = "lang-select" | "select" | "home" | "review" | "browse" | "today" | "daily";
 type Phase = "question" | "answer";
 
 const STATE_LABEL: Record<number, string> = { 0: "신규", 1: "학습중", 2: "복습", 3: "다시학습" };
@@ -57,6 +57,10 @@ export default function WordsPage() {
   const [dueEnWords, setDueEnWords] = useState<EnglishWord[]>([]);
   const [todayZhWords, setTodayZhWords] = useState<Word[]>([]);
   const [todayEnWords, setTodayEnWords] = useState<EnglishWord[]>([]);
+  const [dailyZhWords, setDailyZhWords] = useState<Word[]>([]);
+  const [dailyEnWords, setDailyEnWords] = useState<EnglishWord[]>([]);
+  const [dailyZhCount, setDailyZhCount] = useState<number | null>(null);
+  const [dailyEnCount, setDailyEnCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
   const reloadZh = useCallback(async (level: number) => {
@@ -74,6 +78,30 @@ export default function WordsPage() {
     setEnWords(w);
     setLoading(false);
   }, []);
+
+  // 첫 진입 시 오늘 할당량 미리 조회
+  useEffect(() => {
+    api.words.daily().then((w) => setDailyZhCount(w.length)).catch(() => setDailyZhCount(0));
+    api.englishWords.daily().then((w) => setDailyEnCount(w.length)).catch(() => setDailyEnCount(0));
+  }, []);
+
+  const startDailyZh = async () => {
+    setLoading(true);
+    const words = await api.words.daily();
+    setDailyZhWords(words);
+    setSelectedLang("zh");
+    setLoading(false);
+    setMode("daily");
+  };
+
+  const startDailyEn = async () => {
+    setLoading(true);
+    const words = await api.englishWords.daily();
+    setDailyEnWords(words);
+    setSelectedLang("en");
+    setLoading(false);
+    setMode("daily");
+  };
 
   const selectLang = (lang: Lang) => {
     setSelectedLang(lang);
@@ -120,50 +148,81 @@ export default function WordsPage() {
     setMode("home");
   };
 
-  /* ── 언어 선택 화면 ── */
+  /* ── 메인 화면 ── */
   if (mode === "lang-select") {
     return (
       <div className="flex flex-col min-h-dvh bg-dark-400">
         <div className="px-6 pt-10 pb-6 bg-dark-300 border-b border-white/5">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.back()}
-              className="w-8 h-8 rounded-xl bg-dark-200 hover:bg-dark-100 flex items-center justify-center text-stone-400 hover:text-stone-200 transition-all"
-            >
+            <button onClick={() => router.back()}
+              className="w-8 h-8 rounded-xl bg-dark-200 hover:bg-dark-100 flex items-center justify-center text-stone-400 hover:text-stone-200 transition-all">
               ←
             </button>
             <h1 className="text-2xl font-bold text-stone-100">단어장</h1>
           </div>
-          <p className="text-stone-500 text-sm mt-3">언어를 선택하세요</p>
         </div>
 
-        <div className="flex-1 px-4 py-6 flex flex-col gap-3">
-          <button
-            onClick={() => selectLang("zh")}
-            className="flex items-center gap-4 px-5 py-6 rounded-2xl border bg-dark-200 border-white/5 hover:border-jeok-700 hover:bg-dark-100 active:scale-[0.98] transition-all text-left"
-          >
-            <div className="w-14 h-14 rounded-xl bg-jeok-900 flex items-center justify-center text-2xl font-bold text-jeok-300" style={{ fontFamily: "'LXGW WenKai', serif" }}>
+        <div className="flex-1 px-4 py-6 flex flex-col gap-4">
+          {/* 오늘의 학습 섹션 */}
+          <p className="text-xs text-stone-600 font-medium px-1">오늘의 학습</p>
+
+          <button onClick={startDailyZh} disabled={loading || dailyZhCount === 0}
+            className="flex items-center gap-4 px-5 py-5 rounded-2xl border bg-dark-200 border-white/5 hover:border-jeok-700 hover:bg-dark-100 active:scale-[0.98] transition-all text-left disabled:opacity-40 disabled:cursor-not-allowed">
+            <div className="w-12 h-12 rounded-xl bg-jeok-900 flex items-center justify-center text-xl font-bold text-jeok-300" style={{ fontFamily: "'LXGW WenKai', serif" }}>
               中
             </div>
             <div className="flex-1">
-              <p className="font-bold text-base text-stone-100">중국어</p>
-              <p className="text-xs mt-0.5 text-stone-500">HSK 1~6급</p>
+              <p className="font-bold text-sm text-stone-100">오늘의 중국어</p>
+              <p className="text-xs mt-0.5 text-stone-500">
+                {dailyZhCount === null ? "불러오는 중..." : dailyZhCount === 0 ? "오늘 할 것 없음 ✓" : `${dailyZhCount}개 준비됨`}
+              </p>
             </div>
-            <span className="text-stone-600 text-sm">→</span>
+            {dailyZhCount !== null && dailyZhCount > 0 && (
+              <span className="text-xs font-bold text-jeok-400 bg-jeok-900 px-2.5 py-1 rounded-full">{dailyZhCount}</span>
+            )}
           </button>
 
-          <button
-            onClick={() => selectLang("en")}
-            className="flex items-center gap-4 px-5 py-6 rounded-2xl border bg-dark-200 border-white/5 hover:border-jeok-700 hover:bg-dark-100 active:scale-[0.98] transition-all text-left"
-          >
-            <div className="w-14 h-14 rounded-xl bg-jeok-900 flex items-center justify-center text-2xl font-bold text-jeok-300" style={{ fontFamily: "'Outfit', sans-serif" }}>
+          <button onClick={startDailyEn} disabled={loading || dailyEnCount === 0}
+            className="flex items-center gap-4 px-5 py-5 rounded-2xl border bg-dark-200 border-white/5 hover:border-jeok-700 hover:bg-dark-100 active:scale-[0.98] transition-all text-left disabled:opacity-40 disabled:cursor-not-allowed">
+            <div className="w-12 h-12 rounded-xl bg-jeok-900 flex items-center justify-center text-xl font-bold text-jeok-300" style={{ fontFamily: "'Outfit', sans-serif" }}>
               En
             </div>
             <div className="flex-1">
-              <p className="font-bold text-base text-stone-100">영어</p>
-              <p className="text-xs mt-0.5 text-stone-500">A1~C1 · 15,868개</p>
+              <p className="font-bold text-sm text-stone-100">오늘의 영어</p>
+              <p className="text-xs mt-0.5 text-stone-500">
+                {dailyEnCount === null ? "불러오는 중..." : dailyEnCount === 0 ? "오늘 할 것 없음 ✓" : `${dailyEnCount}개 준비됨`}
+              </p>
             </div>
-            <span className="text-stone-600 text-sm">→</span>
+            {dailyEnCount !== null && dailyEnCount > 0 && (
+              <span className="text-xs font-bold text-jeok-400 bg-jeok-900 px-2.5 py-1 rounded-full">{dailyEnCount}</span>
+            )}
+          </button>
+
+          {/* 레벨별 공부 */}
+          <p className="text-xs text-stone-600 font-medium px-1 mt-2">레벨별 공부</p>
+
+          <button onClick={() => selectLang("zh")}
+            className="flex items-center gap-4 px-5 py-4 rounded-2xl border bg-dark-200 border-white/5 hover:border-stone-700 hover:bg-dark-100 active:scale-[0.98] transition-all text-left">
+            <div className="w-10 h-10 rounded-xl bg-dark-100 flex items-center justify-center text-lg font-bold text-stone-500" style={{ fontFamily: "'LXGW WenKai', serif" }}>
+              中
+            </div>
+            <div className="flex-1">
+              <p className="text-sm text-stone-300">중국어 레벨 선택</p>
+              <p className="text-xs mt-0.5 text-stone-600">HSK 1~6급</p>
+            </div>
+            <span className="text-stone-700 text-sm">→</span>
+          </button>
+
+          <button onClick={() => selectLang("en")}
+            className="flex items-center gap-4 px-5 py-4 rounded-2xl border bg-dark-200 border-white/5 hover:border-stone-700 hover:bg-dark-100 active:scale-[0.98] transition-all text-left">
+            <div className="w-10 h-10 rounded-xl bg-dark-100 flex items-center justify-center text-lg font-bold text-stone-500" style={{ fontFamily: "'Outfit', sans-serif" }}>
+              En
+            </div>
+            <div className="flex-1">
+              <p className="text-sm text-stone-300">영어 레벨 선택</p>
+              <p className="text-xs mt-0.5 text-stone-600">A1~C1 · 15,868개</p>
+            </div>
+            <span className="text-stone-700 text-sm">→</span>
           </button>
         </div>
       </div>
@@ -253,6 +312,20 @@ export default function WordsPage() {
         </div>
       </div>
     );
+  }
+
+  /* ── 오늘의 학습 ── */
+  if (mode === "daily") {
+    if (selectedLang === "zh") {
+      return <ZhReviewSession words={dailyZhWords} onDone={() => {
+        api.words.daily().then((w) => setDailyZhCount(w.length)).catch(() => {});
+        setMode("lang-select");
+      }} onBack={() => setMode("lang-select")} />;
+    }
+    return <EnReviewSession words={dailyEnWords} onDone={() => {
+      api.englishWords.daily().then((w) => setDailyEnCount(w.length)).catch(() => {});
+      setMode("lang-select");
+    }} onBack={() => setMode("lang-select")} />;
   }
 
   /* ── 복습/탐색 화면 위임 ── */
