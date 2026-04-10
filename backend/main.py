@@ -1,8 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from database import engine, Base
 from routers import tasks, categories, words, image_test, english_words, calendar_events, stats, japanese_words
+from routers import auth, admin
+from auth_utils import get_current_user
 
 Base.metadata.create_all(bind=engine)
 
@@ -16,14 +18,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(tasks.router)
-app.include_router(categories.router)
-app.include_router(words.router)
-app.include_router(image_test.router)
-app.include_router(english_words.router)
-app.include_router(calendar_events.router)
-app.include_router(stats.router)
-app.include_router(japanese_words.router)
+# 인증 불필요 라우터
+app.include_router(auth.router)
+
+# 인증 필요 라우터
+_auth = [Depends(get_current_user)]
+app.include_router(tasks.router,          dependencies=_auth)
+app.include_router(categories.router,     dependencies=_auth)
+app.include_router(words.router,          dependencies=_auth)
+app.include_router(image_test.router,     dependencies=_auth)
+app.include_router(english_words.router,  dependencies=_auth)
+app.include_router(calendar_events.router,dependencies=_auth)
+app.include_router(stats.router,          dependencies=_auth)
+app.include_router(japanese_words.router, dependencies=_auth)
+app.include_router(admin.router)
 
 app.mount("/images", StaticFiles(directory="test_output"), name="images")
 

@@ -2,16 +2,20 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTaskStore } from "@/store/taskStore";
 import TaskList from "@/components/TaskList";
 import AddTaskForm from "@/components/AddTaskForm";
 import DoneList from "@/components/DoneList";
+import { getUser, clearAuth } from "@/lib/auth";
 
 type Tab = "todo" | "done";
 
 export default function Home() {
   const { fetchAll, tasks } = useTaskStore();
   const [tab, setTab] = useState<Tab>("todo");
+  const router = useRouter();
+  const user = getUser();
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -29,11 +33,25 @@ export default function Home() {
     <div className="flex flex-col min-h-dvh bg-dark-400">
       {/* 헤더 */}
       <div className="px-6 pt-10 pb-6 bg-dark-300 border-b border-white/5">
-        <div>
-          <Link href="/" className="inline-flex items-center group">
-            <h1 className="text-3xl font-bold text-jeok-400 tracking-tight group-hover:text-jeok-300 transition-colors">onetask</h1>
-          </Link>
-          <p className="text-stone-600 text-xs mt-1">{dateStr}</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <Link href="/" className="inline-flex items-center group">
+              <h1 className="text-3xl font-bold text-jeok-400 tracking-tight group-hover:text-jeok-300 transition-colors">onetask</h1>
+            </Link>
+            <p className="text-stone-600 text-xs mt-1">{dateStr}</p>
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            {user?.is_master && (
+              <Link href="/admin"
+                className="text-xs text-stone-600 hover:text-jeok-400 transition-colors">
+                admin
+              </Link>
+            )}
+            <button onClick={() => { clearAuth(); router.replace("/login"); }}
+              className="text-xs text-stone-700 hover:text-stone-500 transition-colors">
+              로그아웃
+            </button>
+          </div>
         </div>
 
         <div className="flex gap-2 mt-4">

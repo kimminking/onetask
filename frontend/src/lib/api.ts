@@ -1,5 +1,11 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+function getAuthHeaders(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const token = localStorage.getItem("onetask_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export type Urgency = "high" | "normal" | "low";
 export type Status = "todo" | "done";
 
@@ -81,12 +87,40 @@ export interface Word {
 
 async function req<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
     ...options,
   });
+  if (res.status === 401) {
+    localStorage.removeItem("onetask_token");
+    localStorage.removeItem("onetask_user");
+    window.location.href = "/login";
+    throw new Error("Unauthorized");
+  }
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
+
+export const authApi = {
+  status: () => fetch(`${BASE}/auth/status`).then((r) => r.json()) as Promise<{ has_users: boolean }>,
+  login: (username: string, password: string) =>
+    fetch(`${BASE}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    }).then(async (r) => {
+      if (!r.ok) throw new Error((await r.json()).detail || "로그인 실패");
+      return r.json() as Promise<{ access_token: string; is_master: boolean; username: string }>;
+    }),
+  signup: (username: string, password: string) =>
+    fetch(`${BASE}/auth/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    }).then(async (r) => {
+      if (!r.ok) throw new Error((await r.json()).detail || "가입 실패");
+      return r.json() as Promise<{ access_token: string; is_master: boolean; username: string }>;
+    }),
+};
 
 export const api = {
   tasks: {
@@ -171,6 +205,18 @@ export const api = {
       req<{ word_id: number; is_favorite: boolean }>(`/english-words/${id}/favorite`, { method: "POST" }),
     favorites: (level?: string) =>
       req<EnglishWord[]>(`/english-words/favorites${level ? `?level=${level}` : ""}`),
+  },
+  admin: {
+    overview: () => req<{
+      words: {
+        zh: { total: number; by_level: Record<string, number>; reviewed: number };
+        en: { total: number; by_level: Record<string, number>; reviewed: number };
+        ja: { total: number; by_level: Record<string, number>; reviewed: number };
+      };
+      tasks: { todo: number; done: number };
+      calendar: { total: number };
+      users: { id: number; username: string; is_master: boolean }[];
+    }>("/admin/overview"),
   },
   japaneseWords: {
     list: (jlpt_level?: string) => req<JapaneseWord[]>(`/japanese-words/list${jlpt_level ? `?jlpt_level=${jlpt_level}` : ""}`),
