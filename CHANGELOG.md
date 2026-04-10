@@ -35,8 +35,33 @@
 - `frontend/src/lib/api.ts` — JapaneseWord 인터페이스, japaneseWords API 객체, favorites 메서드 추가
 - `frontend/src/app/words/page.tsx` — JA_LEVELS 상수, 일본어 상태/함수, JaBrowseMode·JaSwipeCard·JaReviewSession 컴포넌트, 레벨별 공부 일본어 버튼
 
+- `add_japanese_examples.py` 실행 완료: 6,707/8,062개 예문 생성 (Tatoeba jpn_sentences + GoogleTranslator ja→ko)
+- 로그인/회원가입/마스터 계정 인증 시스템 구현
+  - `User` 모델 (username, hashed_password, is_master)
+  - `/auth/login`, `/auth/signup`, `/auth/status` 엔드포인트
+  - JWT 토큰 (30일) — python-jose + passlib bcrypt
+  - 모든 기존 API 라우터에 Bearer 토큰 인증 필수화
+  - `/admin/overview` 엔드포인트 (마스터 전용): 단어/할일/유저 현황
+  - `/login` 페이지: 계정 없으면 자동 회원가입 모드, 첫 계정 = 마스터
+  - `/admin` 페이지: 마스터 전용 시스템 대시보드
+  - Next.js 미들웨어: 쿠키 기반 라우트 보호
+  - 메인 헤더에 admin 링크 + 로그아웃 버튼
+
+### 변경된 파일
+- `backend/auth_utils.py` — 신규: JWT 유틸리티, get_current_user 의존성
+- `backend/routers/auth.py` — 신규: 인증 라우터
+- `backend/routers/admin.py` — 신규: 마스터 전용 어드민 라우터
+- `backend/models.py` — User 모델 추가
+- `backend/main.py` — auth/admin 라우터 등록, 기존 라우터에 인증 의존성 추가
+- `backend/requirements.txt` — python-jose, passlib, python-multipart 추가
+- `frontend/src/lib/auth.ts` — 신규: 토큰/쿠키 관리 유틸리티
+- `frontend/src/lib/api.ts` — Authorization 헤더 자동 추가, authApi 객체, 401 시 /login 리다이렉트
+- `frontend/src/middleware.ts` — 신규: 쿠키 기반 라우트 보호
+- `frontend/src/app/login/page.tsx` — 신규: 로그인/회원가입 페이지
+- `frontend/src/app/admin/page.tsx` — 신규: 마스터 어드민 대시보드
+- `frontend/src/app/page.tsx` — admin 링크 + 로그아웃 버튼 추가
+
 ### 다음 세션
-- `import_japanese.py` 완료 확인 후 `add_japanese_examples.py` 실행
 - 즐겨찾기 단어만 복습하는 모드
 - 푸시 알림 + FSRS 서버사이드 스케줄링 (2단계)
 
