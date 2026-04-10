@@ -50,11 +50,14 @@ def _word_with_card(word: EnglishWord, wc: Optional[EnglishWordCard]) -> dict:
         "word": word.word,
         "meaning": word.meaning,
         "level": word.level,
+        "example_en": word.example_en,
+        "example_ko": word.example_ko,
         "state": wc.state if wc else 0,
         "reps": wc.reps if wc else 0,
         "lapses": wc.lapses if wc else 0,
         "due": due,
         "is_due": due <= now,
+        "is_favorite": word.is_favorite,
     }
 
 
@@ -125,6 +128,27 @@ def get_today_words(level: Optional[str] = None, db: Session = Depends(get_db)):
         if wc.last_review and wc.last_review >= today_start
     ]
     return [_word_with_card(word_id_map[wc.word_id], wc) for wc in cards]
+
+
+@router.post("/{word_id}/favorite")
+def toggle_favorite(word_id: int, db: Session = Depends(get_db)):
+    word = db.query(EnglishWord).filter(EnglishWord.id == word_id).first()
+    if not word:
+        raise HTTPException(status_code=404, detail="Word not found")
+    word.is_favorite = not word.is_favorite
+    db.commit()
+    return {"word_id": word_id, "is_favorite": word.is_favorite}
+
+
+@router.get("/favorites")
+def get_favorites(level: Optional[str] = None, db: Session = Depends(get_db)):
+    q = db.query(EnglishWord).filter(EnglishWord.is_favorite == True)
+    if level:
+        q = q.filter(EnglishWord.level == level)
+    words = q.order_by(EnglishWord.id).all()
+    word_ids = {w.id for w in words}
+    cards = {wc.word_id: wc for wc in db.query(EnglishWordCard).filter(EnglishWordCard.word_id.in_(word_ids)).all()}
+    return [_word_with_card(w, cards.get(w.id)) for w in words]
 
 
 @router.post("/{word_id}/review")

@@ -15,6 +15,12 @@ class EventCreate(BaseModel):
     event_time: Optional[str] = None  # "HH:MM"
 
 
+class EventUpdate(BaseModel):
+    title: Optional[str] = None
+    event_date: Optional[str] = None
+    event_time: Optional[str] = None
+
+
 @router.get("/")
 def get_events(year: int, month: int, db: Session = Depends(get_db)):
     prefix = f"{year}-{month:02d}"
@@ -25,6 +31,22 @@ def get_events(year: int, month: int, db: Session = Depends(get_db)):
 def create_event(body: EventCreate, db: Session = Depends(get_db)):
     event = CalendarEvent(**body.model_dump())
     db.add(event)
+    db.commit()
+    db.refresh(event)
+    return event
+
+
+@router.patch("/{event_id}")
+def update_event(event_id: int, body: EventUpdate, db: Session = Depends(get_db)):
+    event = db.query(CalendarEvent).filter(CalendarEvent.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if body.title is not None:
+        event.title = body.title
+    if body.event_date is not None:
+        event.event_date = body.event_date
+    if body.event_time is not None:
+        event.event_time = body.event_time
     db.commit()
     db.refresh(event)
     return event

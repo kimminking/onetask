@@ -8,6 +8,7 @@ interface TaskStore {
 
   fetchAll: () => Promise<void>;
   addTask: (title: string, category?: string, urgency?: Urgency, due_at?: string) => Promise<void>;
+  editTask: (id: number, data: Partial<Pick<Task, "title" | "urgency" | "due_at">>) => Promise<void>;
   toggleDone: (id: number, current: Status) => Promise<void>;
   deleteTask: (id: number) => Promise<void>;
   reorderTasks: (ids: number[]) => Promise<void>;
@@ -32,6 +33,11 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   addTask: async (title, category, urgency = "normal", due_at) => {
     const task = await api.tasks.create({ title, category, urgency, due_at });
     set((s) => ({ tasks: [...s.tasks, task] }));
+  },
+
+  editTask: async (id, data) => {
+    const updated = await api.tasks.update(id, data);
+    set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? updated : t)) }));
   },
 
   toggleDone: async (id, current) => {

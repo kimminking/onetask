@@ -14,10 +14,13 @@ export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedDay, setSelectedDay] = useState<number | null>(today.getDate());
 
-  // 이벤트 추가 폼
+  // 이벤트 추가/수정 폼
   const [addingEvent, setAddingEvent] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newTime, setNewTime] = useState("");
+  const [editingEventId, setEditingEventId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editTime, setEditTime] = useState("");
 
   const load = (y: number, m: number) => {
     Promise.all([
@@ -89,6 +92,22 @@ export default function CalendarPage() {
   const deleteEvent = async (id: number) => {
     await api.calendarEvents.delete(id);
     setEvents((prev) => prev.filter((e) => e.id !== id));
+  };
+
+  const startEditEvent = (e: CalendarEvent) => {
+    setEditingEventId(e.id);
+    setEditTitle(e.title);
+    setEditTime(e.event_time ?? "");
+  };
+
+  const saveEditEvent = async () => {
+    if (!editTitle.trim() || editingEventId === null) return;
+    const updated = await api.calendarEvents.update(editingEventId, {
+      title: editTitle.trim(),
+      event_time: editTime || undefined,
+    });
+    setEvents((prev) => prev.map((e) => e.id === editingEventId ? updated : e));
+    setEditingEventId(null);
   };
 
   return (
@@ -215,15 +234,47 @@ export default function CalendarPage() {
 
                 {/* 캘린더 이벤트 목록 */}
                 {selectedEvents.map((e) => (
-                  <div key={e.id} className="flex items-center gap-3 bg-dark-200 border border-blue-900/50 rounded-2xl px-4 py-3 mb-1.5">
-                    <span className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
-                    <div className="flex-1">
-                      <span className="text-sm text-stone-200">{e.title}</span>
-                      {e.event_time && <span className="text-xs text-blue-400 ml-2">{e.event_time}</span>}
+                  editingEventId === e.id ? (
+                    <div key={e.id} className="bg-dark-200 border border-blue-900 rounded-2xl px-4 py-3 mb-1.5 space-y-2">
+                      <input
+                        autoFocus
+                        value={editTitle}
+                        onChange={(ev) => setEditTitle(ev.target.value)}
+                        onKeyDown={(ev) => { if (ev.key === "Enter") saveEditEvent(); if (ev.key === "Escape") setEditingEventId(null); }}
+                        className="w-full text-sm text-stone-100 placeholder-stone-600 bg-transparent border-b border-stone-700 pb-1.5 outline-none focus:border-blue-600 transition-colors"
+                      />
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="time"
+                          value={editTime}
+                          onChange={(ev) => setEditTime(ev.target.value)}
+                          className="text-xs text-stone-300 border border-stone-700 rounded-lg px-2 py-1 outline-none bg-dark-300 focus:border-blue-600 transition-colors"
+                        />
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={() => setEditingEventId(null)}
+                          className="text-xs text-stone-600 hover:text-stone-400 px-3 py-1 rounded-full transition-colors">취소</button>
+                        <button onClick={saveEditEvent} disabled={!editTitle.trim()}
+                          className="text-xs bg-blue-700 hover:bg-blue-600 text-white px-4 py-1 rounded-full disabled:opacity-30 transition-colors">저장</button>
+                      </div>
                     </div>
-                    <button onClick={() => deleteEvent(e.id)}
-                      className="text-stone-700 hover:text-red-500 transition-colors text-xs">✕</button>
-                  </div>
+                  ) : (
+                    <div key={e.id} className="flex items-center gap-3 bg-dark-200 border border-blue-900/50 rounded-2xl px-4 py-3 mb-1.5">
+                      <span className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
+                      <div className="flex-1">
+                        <span className="text-sm text-stone-200">{e.title}</span>
+                        {e.event_time && <span className="text-xs text-blue-400 ml-2">{e.event_time}</span>}
+                      </div>
+                      <button onClick={() => startEditEvent(e)}
+                        className="text-stone-700 hover:text-stone-400 transition-colors mr-1">
+                        <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+                          <path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                      <button onClick={() => deleteEvent(e.id)}
+                        className="text-stone-700 hover:text-red-500 transition-colors text-xs">✕</button>
+                    </div>
+                  )
                 ))}
 
                 {/* due_at 있는 투두 목록 */}

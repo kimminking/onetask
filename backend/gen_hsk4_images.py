@@ -37,7 +37,7 @@ def fetch_hsk4_words():
             "SELECT id, chinese, example_zh FROM words "
             "WHERE hsk_level = 4 AND example_zh IS NOT NULL "
             "AND (image_path IS NULL OR image_path = '') "
-            "ORDER BY id LIMIT 200"
+            "ORDER BY id"
         )).fetchall()
     return rows
 

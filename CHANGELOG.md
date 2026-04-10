@@ -2,6 +2,38 @@
 
 ---
 
+## 2026-04-10 (세션 7)
+### 완료
+- HSK 1~2 단어 삽입 및 언락
+  - `insert_hsk12.py` 실행: HSK 1 149개 / HSK 2 148개 DB 삽입
+  - `words/page.tsx`에서 HSK 1~2 `locked: false`로 변경
+  - `add_hsk12_examples.py`: Tatoeba 중국어 문장 + GoogleTranslator로 예문 생성 (실행 중)
+- 단어 즐겨찾기 기능 추가
+  - `words`, `english_words` 테이블에 `is_favorite` 컬럼 추가
+  - `/words/{id}/favorite`, `/words/favorites` 엔드포인트 추가
+  - `/english-words/{id}/favorite`, `/english-words/favorites` 엔드포인트 추가
+  - 단어 브라우즈 카드에 별 아이콘 즐겨찾기 토글 버튼 추가 (중국어/영어 모두)
+- 캘린더 일정 수정 기능 추가
+  - `/calendar-events/{id}` PATCH 엔드포인트 추가
+  - 캘린더 이벤트 목록에 연필 아이콘 클릭 시 인라인 수정 폼 표시
+
+### 변경된 파일
+- `backend/insert_hsk12.py` — 신규: HSK 1~2 단어 삽입 스크립트
+- `backend/add_hsk12_examples.py` — 신규: HSK 1~2 예문 생성 스크립트 (Tatoeba+번역)
+- `backend/models.py` — Word·EnglishWord에 is_favorite 컬럼 추가
+- `backend/routers/words.py` — is_favorite 응답 필드, favorite·favorites 엔드포인트 추가
+- `backend/routers/english_words.py` — is_favorite 응답 필드, favorite·favorites 엔드포인트 추가
+- `backend/routers/calendar_events.py` — EventUpdate 모델, PATCH 엔드포인트 추가
+- `frontend/src/lib/api.ts` — Word·EnglishWord에 is_favorite 타입, calendarEvents.update·words.favorite·englishWords.favorite 메서드 추가
+- `frontend/src/app/words/page.tsx` — HSK 1~2 언락, StarButton 컴포넌트, ZhBrowseMode·EnBrowseMode 즐겨찾기 기능
+- `frontend/src/app/calendar/page.tsx` — 이벤트 인라인 수정 폼 추가
+
+### 다음 세션
+- 즐겨찾기 단어만 따로 복습하는 모드 (즐겨찾기 필터 복습)
+- 푸시 알림 + FSRS 서버사이드 스케줄링 (2단계)
+
+---
+
 ## 2026-04-10 (세션 6)
 ### 완료
 - 영어 단어장 DB 구축: `english_words` 테이블 생성, MUSE en-ko 15,868개 삽입

@@ -1,0 +1,81 @@
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from datetime import datetime, timezone, timedelta
+
+from database import get_db
+from models import Word, WordCard, EnglishWord, EnglishWordCard
+
+router = APIRouter(prefix="/stats", tags=["stats"])
+
+HSK_LEVELS = [3, 4, 5, 6]
+EN_LEVELS  = ["A1", "A2", "B1", "B2", "C1"]
+
+
+def calc_streak(last_reviews: list[datetime]) -> int:
+    if not last_reviews:
+        return 0
+    today = datetime.now(timezone.utc).date()
+    dates = sorted({r.date() for r in last_reviews if r}, reverse=True)
+    streak = 0
+    expected = today
+    for d in dates:
+        if d == expected or d == expected - timedelta(days=1) and streak == 0:
+            streak += 1
+            expected = d - timedelta(days=1)
+        elif d < expected:
+            break
+    return streak
+
+
+@router.get("/overview")
+def get_overview(db: Session = Depends(get_db)):
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # ── 중국어 ──
+    zh_cards = db.query(WordCard).all()
+    zh_today = sum(1 for c in zh_cards if c.last_review and c.last_review >= today_start)
+    zh_streak = calc_streak([c.last_review for c in zh_cards if c.last_review])
+
+    zh_levels = []
+    for lvl in HSK_LEVELS:
+        words = db.query(Word).filter(Word.hsk_level == lvl).all()
+        wids = {w.id for w in words}
+        cards = [c for c in zh_cards if c.word_id in wids]
+        reviewed = len({c.word_id for c in cards if c.reps > 0})
+        mastered = sum(1 for c in cards if c.state == 2)  # Review state
+        zh_levels.append({
+            "level": f"HSK {lvl}",
+            "total": len(words),
+            "reviewed": reviewed,
+            "mastered": mastered,
+        })
+
+    # ── 영어 ──
+    en_cards = db.query(EnglishWordCard).all()
+    en_today = sum(1 for c in en_cards if c.last_review and c.last_review >= today_start)
+    en_streak = calc_streak([c.last_review for c in en_cards if c.last_review])
+
+    en_levels = []
+    for lvl in EN_LEVELS:
+        words = db.query(EnglishWord).filter(EnglishWord.level == lvl).all()
+        wids = {w.id for w in words}
+        cards = [c for c in en_cards if c.word_id in wids]
+        reviewed = len({c.word_id for c in cards if c.reps > 0})
+        mastered = sum(1 for c in cards if c.state == 2)
+        en_levels.append({
+            "level": lvl,
+            "total": len(words),
+            "reviewed": reviewed,
+            "mastered": mastered,
+        })
+
+    return {
+        "zh_streak": zh_streak,
+        "en_streak": en_streak,
+        "zh_today": zh_today,
+        "en_today": en_today,
+        "zh_levels": zh_levels,
+        "en_levels": en_levels,
+    }

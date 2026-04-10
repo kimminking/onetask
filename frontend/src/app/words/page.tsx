@@ -15,8 +15,8 @@ const STATE_COLOR: Record<number, string> = {
 };
 
 const HSK_LEVELS = [
-  { value: 1, label: "HSK 1", locked: true,  desc: "초급" },
-  { value: 2, label: "HSK 2", locked: true,  desc: "초급" },
+  { value: 1, label: "HSK 1", locked: false, desc: "초급" },
+  { value: 2, label: "HSK 2", locked: false, desc: "초급" },
   { value: 3, label: "HSK 3", locked: false, desc: "초중급" },
   { value: 4, label: "HSK 4", locked: false, desc: "중급" },
   { value: 5, label: "HSK 5", locked: false, desc: "중고급" },
@@ -525,19 +525,49 @@ function ZhReviewSession({ words, onDone, onBack }: { words: Word[]; onDone: () 
   );
 }
 
+function StarButton({ isFav, onToggle }: { isFav: boolean; onToggle: () => void }) {
+  return (
+    <button onClick={onToggle} className="flex-shrink-0 transition-colors ml-auto">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill={isFav ? "#e2a444" : "none"} stroke={isFav ? "#e2a444" : "#57534e"} strokeWidth="1.3">
+        <path d="M8 1.5l1.8 3.6 4 .6-2.9 2.8.7 4-3.6-1.9-3.6 1.9.7-4L2.2 5.7l4-.6z"/>
+      </svg>
+    </button>
+  );
+}
+
 function ZhBrowseMode({ words, onBack, title = "전체 단어" }: { words: Word[]; onBack: () => void; title?: string }) {
+  const [query, setQuery] = useState("");
+  const [favs, setFavs] = useState<Record<number, boolean>>(() =>
+    Object.fromEntries(words.map((w) => [w.id, w.is_favorite]))
+  );
+
+  const toggleFav = async (id: number) => {
+    const result = await api.words.favorite(id);
+    setFavs((f) => ({ ...f, [id]: result.is_favorite }));
+  };
+
+  const filtered = query
+    ? words.filter((w) =>
+        w.chinese.includes(query) ||
+        w.pinyin.toLowerCase().includes(query.toLowerCase()) ||
+        w.meaning.includes(query))
+    : words;
   return (
     <div className="flex flex-col min-h-dvh bg-dark-400">
-      <div className="px-6 pt-14 pb-5 bg-dark-300 border-b border-white/5">
-        <button onClick={onBack} className="text-stone-600 text-xs mb-4 flex items-center gap-1 hover:text-stone-400 transition-colors">← 돌아가기</button>
-        <h2 className="text-xl font-bold text-stone-100">{title} <span className="text-stone-500 font-normal text-sm">{words.length}개</span></h2>
+      <div className="px-6 pt-14 pb-4 bg-dark-300 border-b border-white/5">
+        <button onClick={onBack} className="text-stone-600 text-xs mb-3 flex items-center gap-1 hover:text-stone-400 transition-colors">← 돌아가기</button>
+        <h2 className="text-xl font-bold text-stone-100 mb-3">{title} <span className="text-stone-500 font-normal text-sm">{filtered.length}개</span></h2>
+        <input value={query} onChange={(e) => setQuery(e.target.value)}
+          placeholder="한자 · 병음 · 뜻 검색..."
+          className="w-full bg-dark-200 border border-stone-700 focus:border-jeok-600 rounded-xl px-4 py-2.5 text-sm text-stone-200 placeholder-stone-600 outline-none transition-colors" />
       </div>
       <div className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
-        {words.map((w) => (
+        {filtered.map((w) => (
           <div key={w.id} className="bg-dark-200 border border-white/5 rounded-2xl px-5 py-4">
-            <div className="flex items-baseline gap-2.5">
+            <div className="flex items-center gap-2.5">
               <span className="text-2xl font-bold text-stone-100">{w.chinese}</span>
               <span className="text-sm text-stone-500 font-light">{w.pinyin}</span>
+              <StarButton isFav={!!favs[w.id]} onToggle={() => toggleFav(w.id)} />
             </div>
             <p className="text-sm text-stone-300 font-medium mt-0.5 leading-snug">{w.meaning}</p>
             <div className="flex items-center gap-2 mt-2">
@@ -581,7 +611,8 @@ function EnSwipeCard({ word, flipped, onFlip, onSwipe }: {
   }, []);
   useEffect(() => {
     if (firstRender.current) { firstRender.current = false; return; }
-    speakEnglish(word.word);
+    if (flipped && word.example_en) speakEnglish(word.example_en);
+    else speakEnglish(word.word);
   }, [flipped]);
 
   const x = useMotionValue(0);
@@ -629,10 +660,18 @@ function EnSwipeCard({ word, flipped, onFlip, onSwipe }: {
               <p className="text-xs text-stone-700 mt-2">탭해서 뜻 보기 →</p>
             </div>
             {/* 뒷면: 한국어 뜻 */}
-            <div className="absolute inset-0 bg-dark-300 border border-jeok-900 rounded-3xl flex flex-col items-center justify-center gap-4 p-8"
+            <div className="absolute inset-0 bg-dark-300 border border-jeok-900 rounded-3xl flex flex-col items-center justify-center gap-3 p-8"
               style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
               <p className="text-2xl font-bold text-stone-100 text-center leading-relaxed">{word.meaning}</p>
-              <p className="text-stone-500 text-base font-light" style={{ fontFamily: "'Outfit', sans-serif" }}>{word.word}</p>
+              <p className="text-stone-500 text-sm font-light" style={{ fontFamily: "'Outfit', sans-serif" }}>{word.word}</p>
+              {word.example_en && (
+                <div className="bg-black/30 rounded-xl px-4 py-2.5 mt-1 w-full">
+                  <p className="text-sm text-stone-200 leading-relaxed text-center italic" style={{ fontFamily: "'Outfit', sans-serif" }}>{word.example_en}</p>
+                  {word.example_ko && (
+                    <p className="text-xs text-stone-500 text-center mt-1.5 leading-relaxed">{word.example_ko}</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -683,18 +722,37 @@ function EnReviewSession({ words, onDone, onBack }: { words: EnglishWord[]; onDo
 }
 
 function EnBrowseMode({ words, onBack, title = "전체 단어" }: { words: EnglishWord[]; onBack: () => void; title?: string }) {
+  const [query, setQuery] = useState("");
+  const [favs, setFavs] = useState<Record<number, boolean>>(() =>
+    Object.fromEntries(words.map((w) => [w.id, w.is_favorite]))
+  );
+
+  const toggleFav = async (id: number) => {
+    const result = await api.englishWords.favorite(id);
+    setFavs((f) => ({ ...f, [id]: result.is_favorite }));
+  };
+
+  const filtered = query
+    ? words.filter((w) =>
+        w.word.toLowerCase().includes(query.toLowerCase()) ||
+        w.meaning.includes(query))
+    : words;
   return (
     <div className="flex flex-col min-h-dvh bg-dark-400">
-      <div className="px-6 pt-14 pb-5 bg-dark-300 border-b border-white/5">
-        <button onClick={onBack} className="text-stone-600 text-xs mb-4 flex items-center gap-1 hover:text-stone-400 transition-colors">← 돌아가기</button>
-        <h2 className="text-xl font-bold text-stone-100">{title} <span className="text-stone-500 font-normal text-sm">{words.length}개</span></h2>
+      <div className="px-6 pt-14 pb-4 bg-dark-300 border-b border-white/5">
+        <button onClick={onBack} className="text-stone-600 text-xs mb-3 flex items-center gap-1 hover:text-stone-400 transition-colors">← 돌아가기</button>
+        <h2 className="text-xl font-bold text-stone-100 mb-3">{title} <span className="text-stone-500 font-normal text-sm">{filtered.length}개</span></h2>
+        <input value={query} onChange={(e) => setQuery(e.target.value)}
+          placeholder="영어 단어 · 뜻 검색..."
+          className="w-full bg-dark-200 border border-stone-700 focus:border-jeok-600 rounded-xl px-4 py-2.5 text-sm text-stone-200 placeholder-stone-600 outline-none transition-colors" />
       </div>
       <div className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
-        {words.map((w) => (
+        {filtered.map((w) => (
           <div key={w.id} className="bg-dark-200 border border-white/5 rounded-2xl px-5 py-4">
             <div className="flex items-center gap-2.5">
               <span className="text-xl font-bold text-stone-100" style={{ fontFamily: "'Outfit', sans-serif" }}>{w.word}</span>
               {w.level && <span className="text-xs text-jeok-600 border border-jeok-900 rounded px-1.5 py-0.5">{w.level}</span>}
+              <StarButton isFav={!!favs[w.id]} onToggle={() => toggleFav(w.id)} />
             </div>
             <p className="text-sm text-stone-300 font-medium mt-1 leading-snug">{w.meaning}</p>
             <div className="flex items-center gap-2 mt-2">
@@ -703,6 +761,12 @@ function EnBrowseMode({ words, onBack, title = "전체 단어" }: { words: Engli
               {w.lapses > 0 && <span className="text-xs text-jeok-700">· 틀림 {w.lapses}회</span>}
               <span className="text-xs text-stone-700 ml-auto">{formatDue(w.due)}</span>
             </div>
+            {w.example_en && (
+              <div className="mt-2.5 pt-2.5 border-t border-white/5 space-y-1">
+                <p className="text-xs text-stone-400 italic leading-relaxed">{w.example_en}</p>
+                {w.example_ko && <p className="text-xs text-stone-600 leading-relaxed">{w.example_ko}</p>}
+              </div>
+            )}
           </div>
         ))}
       </div>

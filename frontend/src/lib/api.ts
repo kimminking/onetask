@@ -33,11 +33,14 @@ export interface EnglishWord {
   word: string;
   meaning: string;
   level: string | null;
+  example_en: string | null;
+  example_ko: string | null;
   state: number;
   reps: number;
   lapses: number;
   due: string;
   is_due: boolean;
+  is_favorite: boolean;
 }
 
 export interface Word {
@@ -56,6 +59,7 @@ export interface Word {
   lapses: number;
   due: string;
   is_due: boolean;
+  is_favorite: boolean;
 }
 
 async function req<T>(path: string, options?: RequestInit): Promise<T> {
@@ -92,6 +96,8 @@ export const api = {
       req<CalendarEvent[]>(`/calendar-events/?year=${year}&month=${month}`),
     create: (data: { title: string; event_date: string; event_time?: string }) =>
       req<CalendarEvent>("/calendar-events/", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: number, data: { title?: string; event_date?: string; event_time?: string }) =>
+      req<CalendarEvent>(`/calendar-events/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     delete: (id: number) =>
       req<{ ok: boolean }>(`/calendar-events/${id}`, { method: "DELETE" }),
   },
@@ -117,8 +123,20 @@ export const api = {
         `/words/${id}/review`,
         { method: "POST", body: JSON.stringify({ knew }) }
       ),
+    favorite: (id: number) =>
+      req<{ word_id: number; is_favorite: boolean }>(`/words/${id}/favorite`, { method: "POST" }),
+    favorites: (hsk_level?: number) =>
+      req<Word[]>(`/words/favorites${hsk_level ? `?hsk_level=${hsk_level}` : ""}`),
     delete: (id: number) =>
       req<{ ok: boolean }>(`/words/${id}`, { method: "DELETE" }),
+  },
+  stats: {
+    overview: () => req<{
+      zh_streak: number; en_streak: number;
+      zh_today: number; en_today: number;
+      zh_levels: { level: string; total: number; reviewed: number; mastered: number }[];
+      en_levels: { level: string; total: number; reviewed: number; mastered: number }[];
+    }>("/stats/overview"),
   },
   englishWords: {
     list: (level?: string) => req<EnglishWord[]>(`/english-words/${level ? `?level=${level}` : ""}`),
@@ -130,5 +148,9 @@ export const api = {
         `/english-words/${id}/review`,
         { method: "POST", body: JSON.stringify({ knew }) }
       ),
+    favorite: (id: number) =>
+      req<{ word_id: number; is_favorite: boolean }>(`/english-words/${id}/favorite`, { method: "POST" }),
+    favorites: (level?: string) =>
+      req<EnglishWord[]>(`/english-words/favorites${level ? `?level=${level}` : ""}`),
   },
 };

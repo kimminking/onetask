@@ -75,6 +75,7 @@ def _word_with_card(word: Word, wc: Optional[WordCard]) -> dict:
         "lapses": wc.lapses if wc else 0,
         "due": due,
         "is_due": due <= now,
+        "is_favorite": word.is_favorite,
     }
 
 
@@ -182,6 +183,26 @@ def review_word(word_id: int, body: ReviewRequest, db: Session = Depends(get_db)
         "state": wc.state,
         "reps": wc.reps,
     }
+
+
+@router.post("/{word_id}/favorite")
+def toggle_favorite(word_id: int, db: Session = Depends(get_db)):
+    word = db.query(Word).filter(Word.id == word_id).first()
+    if not word:
+        raise HTTPException(status_code=404, detail="Word not found")
+    word.is_favorite = not word.is_favorite
+    db.commit()
+    return {"word_id": word_id, "is_favorite": word.is_favorite}
+
+
+@router.get("/favorites")
+def get_favorites(hsk_level: Optional[int] = None, db: Session = Depends(get_db)):
+    q = db.query(Word).filter(Word.is_favorite == True)
+    if hsk_level:
+        q = q.filter(Word.hsk_level == hsk_level)
+    words = q.order_by(Word.id).all()
+    cards = {wc.word_id: wc for wc in db.query(WordCard).all()}
+    return [_word_with_card(w, cards.get(w.id)) for w in words]
 
 
 @router.delete("/{word_id}")

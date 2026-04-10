@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, Enum, func
+from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, Enum, Boolean, func
 from database import Base
 import enum
 
@@ -59,6 +59,7 @@ class Word(Base):
     audio_path = Column(String, nullable=True)
     image_path = Column(String, nullable=True)
     hsk_level = Column(Integer, nullable=True)
+    is_favorite = Column(Boolean, default=False, nullable=False, server_default="false")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
@@ -85,6 +86,9 @@ class EnglishWord(Base):
     word = Column(String(100), nullable=False, unique=True)
     meaning = Column(String(500), nullable=False)
     level = Column(String(2), nullable=True)
+    example_en = Column(String, nullable=True)
+    example_ko = Column(String, nullable=True)
+    is_favorite = Column(Boolean, default=False, nullable=False, server_default="false")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
