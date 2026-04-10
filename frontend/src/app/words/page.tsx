@@ -499,6 +499,9 @@ function ZhSwipeCard({ word, flipped, onFlip, onSwipe }: {
             {/* 앞면 */}
             <div className="absolute inset-0 bg-dark-200 border border-white/5 rounded-3xl flex flex-col items-center justify-center gap-4 p-8 overflow-hidden"
               style={{ backfaceVisibility: "hidden" }}>
+              {word.hsk_level && (
+                <span className="absolute top-3 right-4 text-xs text-stone-600 font-medium z-20">HSK {word.hsk_level}</span>
+              )}
               {word.image_path && (
                 <div className="absolute inset-0 overflow-hidden rounded-3xl">
                   <img src={`${BASE_URL}/images/${word.image_path.replace("test_output/", "")}`} alt=""
@@ -724,12 +727,12 @@ function EnSwipeCard({ word, flipped, onFlip, onSwipe }: {
             {/* 앞면: 영어 단어 */}
             <div className="absolute inset-0 bg-dark-200 border border-white/5 rounded-3xl flex flex-col items-center justify-center gap-4 p-8"
               style={{ backfaceVisibility: "hidden" }}>
+              {word.level && (
+                <span className="absolute top-3 right-4 text-xs text-stone-600 font-medium z-20">{word.level}</span>
+              )}
               <p className="text-5xl font-bold text-stone-100 text-center tracking-wide"
                 style={{ fontFamily: "'Outfit', sans-serif" }}>{word.word}</p>
               <CopyButton text={word.word} />
-              {word.level && (
-                <span className="text-xs text-jeok-500 border border-jeok-900 rounded-lg px-3 py-1">{word.level}</span>
-              )}
               <p className="text-xs text-stone-700 mt-2">탭해서 뜻 보기 →</p>
             </div>
             {/* 뒷면: 한국어 뜻 */}
