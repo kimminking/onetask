@@ -101,11 +101,22 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {mode === "signup" && (
-          <p className="text-center text-stone-700 text-xs mt-6">
-            첫 번째 계정은 자동으로 마스터 계정이 됩니다
-          </p>
-        )}
+        <div className="text-center mt-6">
+          {mode === "login" ? (
+            <button onClick={() => { setMode("signup"); setError(""); }}
+              className="text-stone-600 hover:text-stone-400 text-xs transition-colors">
+              계정 만들기
+            </button>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-stone-700 text-xs">첫 번째 계정은 자동으로 마스터 계정이 됩니다</p>
+              <button onClick={() => { setMode("login"); setError(""); }}
+                className="text-stone-600 hover:text-stone-400 text-xs transition-colors">
+                로그인으로 돌아가기
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
