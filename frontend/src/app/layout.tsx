@@ -17,6 +17,12 @@ const a2g = localFont({
 export const metadata: Metadata = {
   title: "onetask",
   description: "개인 학습 + 일정 대시보드",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "onetask",
+  },
 };
 
 export default function RootLayout({
@@ -27,6 +33,10 @@ export default function RootLayout({
       <head>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500&display=swap" />
+        <meta name="theme-color" content="#1a1a1a" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body className={`${a2g.variable} antialiased`}>
         <div id="app-frame">
