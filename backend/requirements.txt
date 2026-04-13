@@ -9,4 +9,4 @@ passlib[bcrypt]
 python-multipart
 pywebpush
 apscheduler
-py-fsrs
+fsrs
