@@ -177,6 +177,19 @@ export default function Home() {
           </div>
           <span className="ml-auto text-stone-600 group-hover:text-jeok-400 transition-colors">→</span>
         </Link>
+        <Link
+          href="/python"
+          className="flex items-center gap-4 bg-dark-200 hover:bg-dark-100 border border-white/5 hover:border-blue-800 rounded-2xl px-5 py-4 transition-all duration-200 group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-blue-900/40 flex items-center justify-center text-xl">
+            🐍
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-stone-200">Python AI</p>
+            <p className="text-xs text-stone-500 mt-0.5">변수부터 신경망까지 10단계</p>
+          </div>
+          <span className="ml-auto text-stone-600 group-hover:text-blue-400 transition-colors">→</span>
+        </Link>
       </div>
     </div>
   );
