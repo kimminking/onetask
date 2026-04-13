@@ -184,11 +184,13 @@ export const api = {
   },
   stats: {
     overview: () => req<{
-      zh_streak: number; en_streak: number;
-      zh_today: number; en_today: number;
+      zh_streak: number; en_streak: number; ja_streak: number;
+      zh_today: number; en_today: number; ja_today: number;
       zh_levels: { level: string; total: number; reviewed: number; mastered: number }[];
       en_levels: { level: string; total: number; reviewed: number; mastered: number }[];
+      ja_levels: { level: string; total: number; reviewed: number; mastered: number }[];
     }>("/stats/overview"),
+    history: (days = 90) => req<{ date: string; count: number }[]>(`/stats/history?days=${days}`),
   },
   englishWords: {
     list: (level?: string) => req<EnglishWord[]>(`/english-words/${level ? `?level=${level}` : ""}`),
@@ -205,6 +207,13 @@ export const api = {
       req<{ word_id: number; is_favorite: boolean }>(`/english-words/${id}/favorite`, { method: "POST" }),
     favorites: (level?: string) =>
       req<EnglishWord[]>(`/english-words/favorites${level ? `?level=${level}` : ""}`),
+  },
+  push: {
+    test: (title?: string, body?: string) =>
+      req<{ sent: number }>("/push/test", {
+        method: "POST",
+        body: JSON.stringify({ title: title ?? "onetask 테스트", body: body ?? "푸시 알림이 정상 작동합니다!" }),
+      }),
   },
   admin: {
     overview: () => req<{

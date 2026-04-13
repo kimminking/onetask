@@ -20,6 +20,7 @@ export default function AdminPage() {
   const router = useRouter();
   const [data, setData] = useState<AdminData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pushStatus, setPushStatus] = useState<string | null>(null);
   const user = getUser();
 
   useEffect(() => {
@@ -31,6 +32,17 @@ export default function AdminPage() {
   }, []);
 
   const logout = () => { clearAuth(); router.replace("/login"); };
+
+  const sendTestPush = async () => {
+    setPushStatus("전송 중...");
+    try {
+      const result = await api.push.test();
+      setPushStatus(`✓ ${result.sent}개 디바이스에 전송됨`);
+    } catch {
+      setPushStatus("✗ 전송 실패 (구독된 디바이스 없음?)");
+    }
+    setTimeout(() => setPushStatus(null), 3000);
+  };
 
   if (loading) return (
     <div className="min-h-dvh bg-dark-400 flex items-center justify-center">
@@ -110,6 +122,18 @@ export default function AdminPage() {
           <StatRow label="진행 중 할일" value={`${data.tasks.todo}개`} />
           <StatRow label="완료된 할일" value={`${data.tasks.done}개`} />
           <StatRow label="캘린더 일정" value={`${data.calendar.total}개`} />
+        </div>
+
+        {/* 푸시 알림 */}
+        <div className="bg-dark-200 border border-white/5 rounded-2xl px-5 py-4">
+          <p className="text-xs text-stone-600 font-medium mb-3">푸시 알림</p>
+          <button onClick={sendTestPush}
+            className="w-full py-3 rounded-xl bg-jeok-700 hover:bg-jeok-600 text-white text-sm font-medium transition-colors">
+            테스트 알림 발송
+          </button>
+          {pushStatus && (
+            <p className="text-xs text-stone-400 mt-2 text-center">{pushStatus}</p>
+          )}
         </div>
 
         {/* 유저 목록 */}

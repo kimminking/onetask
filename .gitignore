@@ -31,3 +31,17 @@ Thumbs.db
 
 # Docker env
 .env
+
+# VAPID private key
+backend/vapid_private.pem
+
+# Large data files
+backend/*.tsv
+backend/*.tsv.bz2
+backend/*.tar.bz2
+backend/*.sql
+backend/import_ja_log.txt
+backend/en-ko.txt
+
+# Claude memory
+.claude/

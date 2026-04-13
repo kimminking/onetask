@@ -6,7 +6,7 @@ import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { api, Word, EnglishWord, JapaneseWord } from "@/lib/api";
 
 type Lang = "zh" | "en" | "ja";
-type Mode = "lang-select" | "select" | "home" | "review" | "browse" | "today" | "daily";
+type Mode = "lang-select" | "select" | "home" | "review" | "browse" | "today" | "daily" | "favorites" | "fav-review" | "fav-browse";
 type Phase = "question" | "answer";
 
 const STATE_LABEL: Record<number, string> = { 0: "신규", 1: "학습중", 2: "복습", 3: "다시학습" };
@@ -75,6 +75,12 @@ export default function WordsPage() {
   const [dailyZhCount, setDailyZhCount] = useState<number | null>(null);
   const [dailyEnCount, setDailyEnCount] = useState<number | null>(null);
   const [dailyJaCount, setDailyJaCount] = useState<number | null>(null);
+  const [favZhWords, setFavZhWords] = useState<Word[]>([]);
+  const [favEnWords, setFavEnWords] = useState<EnglishWord[]>([]);
+  const [favJaWords, setFavJaWords] = useState<JapaneseWord[]>([]);
+  const [favZhCount, setFavZhCount] = useState<number | null>(null);
+  const [favEnCount, setFavEnCount] = useState<number | null>(null);
+  const [favJaCount, setFavJaCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
   const reloadZh = useCallback(async (level: number) => {
@@ -101,12 +107,40 @@ export default function WordsPage() {
     setLoading(false);
   }, []);
 
-  // 첫 진입 시 오늘 할당량 미리 조회
+  // 첫 진입 시 오늘 할당량 + 즐겨찾기 개수 미리 조회
   useEffect(() => {
     api.words.daily().then((w) => setDailyZhCount(w.length)).catch(() => setDailyZhCount(0));
     api.englishWords.daily().then((w) => setDailyEnCount(w.length)).catch(() => setDailyEnCount(0));
     api.japaneseWords.daily().then((w) => setDailyJaCount(w.length)).catch(() => setDailyJaCount(0));
+    api.words.favorites().then((w) => setFavZhCount(w.length)).catch(() => setFavZhCount(0));
+    api.englishWords.favorites().then((w) => setFavEnCount(w.length)).catch(() => setFavEnCount(0));
+    api.japaneseWords.favorites().then((w) => setFavJaCount(w.length)).catch(() => setFavJaCount(0));
   }, []);
+
+  const startFavZh = async () => {
+    setLoading(true);
+    const words = await api.words.favorites();
+    setFavZhWords(words);
+    setSelectedLang("zh");
+    setLoading(false);
+    setMode("favorites");
+  };
+  const startFavEn = async () => {
+    setLoading(true);
+    const words = await api.englishWords.favorites();
+    setFavEnWords(words);
+    setSelectedLang("en");
+    setLoading(false);
+    setMode("favorites");
+  };
+  const startFavJa = async () => {
+    setLoading(true);
+    const words = await api.japaneseWords.favorites();
+    setFavJaWords(words);
+    setSelectedLang("ja");
+    setLoading(false);
+    setMode("favorites");
+  };
 
   const startDailyZh = async () => {
     setLoading(true);
@@ -297,6 +331,31 @@ export default function WordsPage() {
             </div>
             <span className="text-stone-700 text-sm">→</span>
           </button>
+
+          {/* 즐겨찾기 */}
+          <p className="text-xs text-stone-600 font-medium px-1 mt-2">즐겨찾기</p>
+
+          {[
+            { icon: "中", label: "중국어 즐겨찾기", count: favZhCount, onClick: startFavZh, font: "'LXGW WenKai', serif" },
+            { icon: "En", label: "영어 즐겨찾기", count: favEnCount, onClick: startFavEn, font: "'Outfit', sans-serif" },
+            { icon: "日", label: "일본어 즐겨찾기", count: favJaCount, onClick: startFavJa, font: "inherit" },
+          ].map(({ icon, label, count, onClick, font }) => (
+            <button key={label} onClick={onClick} disabled={loading || count === 0}
+              className="flex items-center gap-4 px-5 py-4 rounded-2xl border bg-dark-200 border-white/5 hover:border-yellow-800 hover:bg-dark-100 active:scale-[0.98] transition-all text-left disabled:opacity-40 disabled:cursor-not-allowed">
+              <div className="w-10 h-10 rounded-xl bg-yellow-900/30 flex items-center justify-center text-lg font-bold text-yellow-500/80" style={{ fontFamily: font }}>
+                {icon}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-stone-300">{label}</p>
+                <p className="text-xs mt-0.5 text-stone-600">
+                  {count === null ? "불러오는 중..." : count === 0 ? "즐겨찾기 없음" : `${count}개`}
+                </p>
+              </div>
+              {count !== null && count > 0 && (
+                <span className="text-xs font-bold text-yellow-500 bg-yellow-900/30 px-2.5 py-1 rounded-full">★ {count}</span>
+              )}
+            </button>
+          ))}
         </div>
       </div>
     );
@@ -470,6 +529,55 @@ export default function WordsPage() {
       return <JaBrowseMode words={todayJaWords} title="오늘 공부한 단어" onBack={() => setMode("home")} />;
     }
     return <EnBrowseMode words={todayEnWords} title="오늘 공부한 단어" onBack={() => setMode("home")} />;
+  }
+  if (mode === "fav-browse") {
+    if (selectedLang === "zh") return <ZhBrowseMode words={favZhWords} title="★ 즐겨찾기" onBack={() => setMode("favorites")} />;
+    if (selectedLang === "ja") return <JaBrowseMode words={favJaWords} title="★ 즐겨찾기" onBack={() => setMode("favorites")} />;
+    return <EnBrowseMode words={favEnWords} title="★ 즐겨찾기" onBack={() => setMode("favorites")} />;
+  }
+  if (mode === "fav-review") {
+    const onDone = () => setMode("favorites");
+    if (selectedLang === "zh") return <ZhReviewSession words={favZhWords} onDone={onDone} onBack={onDone} />;
+    if (selectedLang === "ja") return <JaReviewSession words={favJaWords} onDone={onDone} onBack={onDone} />;
+    return <EnReviewSession words={favEnWords} onDone={onDone} onBack={onDone} />;
+  }
+  if (mode === "favorites") {
+    const favWords = selectedLang === "zh" ? favZhWords : selectedLang === "ja" ? favJaWords : favEnWords;
+    const langLabel = selectedLang === "zh" ? "중국어" : selectedLang === "ja" ? "일본어" : "영어";
+    const onBack = () => {
+      api.words.favorites().then((w) => setFavZhCount(w.length)).catch(() => {});
+      api.englishWords.favorites().then((w) => setFavEnCount(w.length)).catch(() => {});
+      api.japaneseWords.favorites().then((w) => setFavJaCount(w.length)).catch(() => {});
+      setMode("lang-select");
+    };
+    return (
+      <div className="flex flex-col min-h-dvh bg-dark-400">
+        <div className="px-6 pt-10 pb-5 bg-dark-300 border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <button onClick={onBack}
+              className="w-8 h-8 rounded-xl bg-dark-200 hover:bg-dark-100 flex items-center justify-center text-stone-400 hover:text-stone-200 transition-all">
+              ←
+            </button>
+            <div>
+              <h1 className="text-xl font-bold text-yellow-400">★ 즐겨찾기</h1>
+              <p className="text-xs text-stone-600 mt-0.5">{langLabel} · {favWords.length}개</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 px-4 py-5 flex flex-col gap-3">
+          <button onClick={() => setMode("fav-review")} disabled={favWords.length === 0}
+            className="w-full py-6 rounded-2xl font-bold text-lg transition-all duration-200 shadow-lg
+              bg-yellow-700 hover:bg-yellow-600 text-white shadow-yellow-900/40
+              disabled:bg-dark-200 disabled:text-stone-600 disabled:shadow-none disabled:border disabled:border-white/5">
+            플래시카드 복습
+          </button>
+          <button onClick={() => setMode("fav-browse")}
+            className="w-full py-4 bg-dark-200 hover:bg-dark-100 border border-white/5 text-stone-400 hover:text-stone-200 rounded-2xl font-medium text-sm transition-all">
+            목록으로 보기
+          </button>
+        </div>
+      </div>
+    );
   }
 
   /* ── 레벨 홈 화면 ── */

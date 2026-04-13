@@ -131,6 +131,18 @@ class EnglishWord(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
+class PushSubscription(Base):
+    """브라우저 Web Push 구독 정보"""
+    __tablename__ = "push_subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    endpoint = Column(String, nullable=False, unique=True)
+    p256dh = Column(String, nullable=False)
+    auth = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
 class EnglishWordCard(Base):
     """영어 단어 FSRS 스케줄링 상태"""
     __tablename__ = "english_word_cards"

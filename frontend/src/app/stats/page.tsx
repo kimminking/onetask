@@ -4,11 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 
+type LangTab = "zh" | "en" | "ja";
+
 type Overview = {
-  zh_streak: number; en_streak: number;
-  zh_today: number; en_today: number;
+  zh_streak: number; en_streak: number; ja_streak: number;
+  zh_today: number; en_today: number; ja_today: number;
   zh_levels: { level: string; total: number; reviewed: number; mastered: number }[];
   en_levels: { level: string; total: number; reviewed: number; mastered: number }[];
+  ja_levels: { level: string; total: number; reviewed: number; mastered: number }[];
 };
 
 function ProgressBar({ value, max, color = "bg-jeok-500" }: { value: number; max: number; color?: string }) {
@@ -20,23 +23,80 @@ function ProgressBar({ value, max, color = "bg-jeok-500" }: { value: number; max
   );
 }
 
+function Heatmap({ data }: { data: { date: string; count: number }[] }) {
+  if (!data.length) return null;
+
+  const max = Math.max(...data.map((d) => d.count), 1);
+  const getColor = (count: number) => {
+    if (count === 0) return "bg-dark-100";
+    const ratio = count / max;
+    if (ratio < 0.25) return "bg-jeok-900";
+    if (ratio < 0.5)  return "bg-jeok-700";
+    if (ratio < 0.75) return "bg-jeok-600";
+    return "bg-jeok-400";
+  };
+
+  // 13주 × 7일 그리드 (일요일 시작)
+  const weeks: { date: string; count: number }[][] = [];
+  // 첫 날의 요일에 맞춰 앞에 빈칸 추가
+  const firstDay = new Date(data[0].date).getDay();
+  const padded = [...Array(firstDay).fill(null), ...data];
+  for (let i = 0; i < padded.length; i += 7) {
+    weeks.push(padded.slice(i, i + 7) as { date: string; count: number }[]);
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+
+  return (
+    <div className="bg-dark-200 border border-white/5 rounded-2xl px-5 py-4">
+      <p className="text-sm font-semibold text-stone-200 mb-3">최근 90일 학습 기록</p>
+      <div className="flex gap-1 overflow-x-auto pb-1">
+        {weeks.map((week, wi) => (
+          <div key={wi} className="flex flex-col gap-1">
+            {week.map((day, di) =>
+              day ? (
+                <div
+                  key={di}
+                  title={`${day.date}: ${day.count}개`}
+                  className={`w-3 h-3 rounded-sm ${getColor(day.count)} ${day.date === today ? "ring-1 ring-jeok-400" : ""}`}
+                />
+              ) : (
+                <div key={di} className="w-3 h-3" />
+              )
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-1.5 mt-2">
+        <span className="text-xs text-stone-700">적음</span>
+        {["bg-dark-100", "bg-jeok-900", "bg-jeok-700", "bg-jeok-600", "bg-jeok-400"].map((c, i) => (
+          <div key={i} className={`w-3 h-3 rounded-sm ${c}`} />
+        ))}
+        <span className="text-xs text-stone-700">많음</span>
+      </div>
+    </div>
+  );
+}
+
 export default function StatsPage() {
   const router = useRouter();
   const [data, setData] = useState<Overview | null>(null);
-  const [tab, setTab] = useState<"zh" | "en">("zh");
+  const [history, setHistory] = useState<{ date: string; count: number }[]>([]);
+  const [tab, setTab] = useState<LangTab>("zh");
 
   useEffect(() => {
     api.stats.overview().then(setData).catch(() => {});
+    api.stats.history().then(setHistory).catch(() => {});
   }, []);
 
   if (!data) return (
     <div className="flex min-h-dvh items-center justify-center bg-dark-400 text-stone-600 text-sm">불러오는 중...</div>
   );
 
-  const levels = tab === "zh" ? data.zh_levels : data.en_levels;
-  const streak = tab === "zh" ? data.zh_streak : data.en_streak;
-  const today  = tab === "zh" ? data.zh_today  : data.en_today;
-  const totalAll   = levels.reduce((s, l) => s + l.total, 0);
+  const levels = tab === "zh" ? data.zh_levels : tab === "ja" ? data.ja_levels : data.en_levels;
+  const streak = tab === "zh" ? data.zh_streak : tab === "ja" ? data.ja_streak : data.en_streak;
+  const today  = tab === "zh" ? data.zh_today  : tab === "ja" ? data.ja_today  : data.en_today;
+  const totalAll    = levels.reduce((s, l) => s + l.total, 0);
   const reviewedAll = levels.reduce((s, l) => s + l.reviewed, 0);
   const masteredAll = levels.reduce((s, l) => s + l.mastered, 0);
 
@@ -53,14 +113,17 @@ export default function StatsPage() {
         </div>
       </div>
 
-      <div className="flex-1 px-4 py-5 space-y-4">
+      <div className="flex-1 px-4 py-5 space-y-4 overflow-y-auto">
+        {/* 히트맵 */}
+        <Heatmap data={history} />
+
         {/* 언어 탭 */}
         <div className="flex bg-dark-200 rounded-2xl p-1 gap-1">
-          {(["zh", "en"] as const).map((t) => (
+          {(["zh", "en", "ja"] as LangTab[]).map((t) => (
             <button key={t} onClick={() => setTab(t)}
               className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
                 tab === t ? "bg-jeok-600 text-white shadow-lg shadow-jeok-900/50" : "text-stone-500 hover:text-stone-300"}`}>
-              {t === "zh" ? "중국어" : "영어"}
+              {t === "zh" ? "중국어" : t === "en" ? "영어" : "일본어"}
             </button>
           ))}
         </div>

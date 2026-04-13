@@ -8,16 +8,31 @@ import TaskList from "@/components/TaskList";
 import AddTaskForm from "@/components/AddTaskForm";
 import DoneList from "@/components/DoneList";
 import { getUser, clearAuth } from "@/lib/auth";
+import { subscribePush, getPushPermission } from "@/lib/push";
+import { api } from "@/lib/api";
 
 type Tab = "todo" | "done";
 
 export default function Home() {
   const { fetchAll, tasks } = useTaskStore();
   const [tab, setTab] = useState<Tab>("todo");
+  const [pushPermission, setPushPermission] = useState<NotificationPermission>("default");
+  const [wordToday, setWordToday] = useState<number | null>(null);
   const router = useRouter();
   const user = getUser();
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    getPushPermission().then(setPushPermission);
+    api.stats.overview()
+      .then((s) => setWordToday(s.zh_today + s.en_today + s.ja_today))
+      .catch(() => {});
+  }, []);
+
+  const handleEnablePush = async () => {
+    const ok = await subscribePush();
+    if (ok) setPushPermission("granted");
+  };
 
   const doneToday = tasks.filter((t) => {
     if (t.status !== "done" || !t.done_at) return false;
@@ -41,6 +56,12 @@ export default function Home() {
             <p className="text-stone-600 text-xs mt-1">{dateStr}</p>
           </div>
           <div className="flex items-center gap-2 mt-1">
+            {pushPermission !== "granted" && pushPermission !== "denied" && (
+              <button onClick={handleEnablePush}
+                className="text-xs text-jeok-500 hover:text-jeok-400 transition-colors">
+                🔔 알림
+              </button>
+            )}
             {user?.is_master && (
               <Link href="/admin"
                 className="text-xs text-stone-600 hover:text-jeok-400 transition-colors">
@@ -63,6 +84,12 @@ export default function Home() {
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
             오늘 완료 {doneToday.length}개
           </span>
+          {wordToday !== null && wordToday > 0 && (
+            <span className="flex items-center gap-1.5 bg-dark-200 rounded-full px-3 py-1.5 text-xs font-medium text-stone-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 inline-block" />
+              단어 {wordToday}개
+            </span>
+          )}
         </div>
       </div>
 

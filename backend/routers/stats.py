@@ -102,3 +102,27 @@ def get_overview(db: Session = Depends(get_db)):
         "en_levels": en_levels,
         "ja_levels": ja_levels,
     }
+
+
+@router.get("/history")
+def get_history(days: int = 90, db: Session = Depends(get_db)):
+    """최근 N일 일별 복습 단어 수 반환 (히트맵용)"""
+    now = datetime.now(timezone.utc)
+    start = (now - timedelta(days=days - 1)).replace(hour=0, minute=0, second=0, microsecond=0)
+
+    counts: dict[str, int] = {}
+    for CardModel in [WordCard, EnglishWordCard, JapaneseWordCard]:
+        rows = db.query(CardModel.last_review).filter(
+            CardModel.last_review.isnot(None),
+            CardModel.last_review >= start,
+        ).all()
+        for (dt,) in rows:
+            if dt:
+                d = dt.astimezone(timezone.utc).date().isoformat()
+                counts[d] = counts.get(d, 0) + 1
+
+    result = []
+    for i in range(days):
+        d = (start + timedelta(days=i)).date().isoformat()
+        result.append({"date": d, "count": counts.get(d, 0)})
+    return result
