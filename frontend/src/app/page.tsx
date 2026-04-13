@@ -164,6 +164,19 @@ export default function Home() {
           </div>
           <span className="ml-auto text-stone-600 group-hover:text-jeok-400 transition-colors">→</span>
         </Link>
+        <Link
+          href="/math"
+          className="flex items-center gap-4 bg-dark-200 hover:bg-dark-100 border border-white/5 hover:border-jeok-800 rounded-2xl px-5 py-4 transition-all duration-200 group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-dark-100 flex items-center justify-center text-xl">
+            📐
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-stone-200">AI 미적분</p>
+            <p className="text-xs text-stone-500 mt-0.5">중학생도 이해하는 10단계</p>
+          </div>
+          <span className="ml-auto text-stone-600 group-hover:text-jeok-400 transition-colors">→</span>
+        </Link>
       </div>
     </div>
   );
