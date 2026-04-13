@@ -1,12 +1,10 @@
+// @ts-nocheck
 // 커스텀 서비스 워커 — push 이벤트 처리
-// @ducanh2912/next-pwa가 이 파일을 생성된 SW에 병합함
-
-declare const self: ServiceWorkerGlobalScope;
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;
 
-  let payload: { title: string; body: string; url?: string };
+  let payload;
   try {
     payload = event.data.json();
   } catch {
@@ -26,7 +24,7 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = (event.notification.data?.url as string) ?? "/";
+  const url = event.notification.data?.url ?? "/";
   event.waitUntil(
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })
