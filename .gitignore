@@ -28,3 +28,6 @@ Thumbs.db
 
 # DB
 *.sqlite3
+
+# Docker env
+.env
