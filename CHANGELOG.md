@@ -2,6 +2,41 @@
 
 ---
 
+## 2026-04-15 (세션 10)
+### 완료
+- HSK3~6 누락 이미지 472개 재생성 완료 (누락 0개 달성)
+  - 스타일 변경: watercolor/pastel → flat vector illustration, bold outlines, vibrant saturated colors
+  - HSK3 年级 예문 수정 (단어 미포함 예문 → 올바른 예문으로 교체)
+  - `regen_missing_images.py`: HSK3~6 통합 누락 이미지 재생성 스크립트 신규 작성
+
+### 변경된 파일
+- `backend/regen_missing_images.py` — 누락 이미지 통합 재생성 스크립트 (신규)
+
+### 다음 세션
+- 서버에 이미지 업로드 (scp/rsync로 test_output/ 폴더 전송)
+- DB dump → 서버 반영
+
+---
+
+## 2026-04-14 (세션 9)
+### 완료
+- HSK4 단어-예문 불일치 100% 수정 (601개 → 전부 일치)
+  - 원인: import 시 중복 row(等/对/过 등) 3개가 뜻/예문 shift 유발
+  - Phase 1 (`fix_hsk4_rematch.py`): SQL 예문 기반 re-match로 358개 수정 (16% → 76%)
+  - Phase 2 (`fix_hsk4_phase2.py`): 남은 141개 처리
+    - SQL 충돌 해결 (욕심 알고리즘 + 1자 한자 복합어 판별): 106개 수정
+    - 35개 미매칭 단어: 올바른 뜻 + 예문 직접 작성하여 하드코딩
+
+### 변경된 파일
+- `backend/fix_hsk4_rematch.py` — HSK4 예문 기반 뜻/예문 재매핑 (신규)
+- `backend/fix_hsk4_phase2.py` — Phase 2 수정 스크립트, 복합어 판별 + 하드코딩 (신규)
+
+### 다음 세션
+- 필요 시 HSK4 이미지 생성 (`gen_hsk6_images.py` 방식으로)
+- 서버에 수정된 DB 반영 (dump → 업로드)
+
+---
+
 ## 2026-04-10 (세션 8)
 ### 완료
 - 일본어 단어장 시스템 구축
