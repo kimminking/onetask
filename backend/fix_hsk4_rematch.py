@@ -13,14 +13,14 @@ HSK4 meaning/example 재매핑 스크립트
   python fix_hsk4_rematch.py --dry-run   # 미리보기
   python fix_hsk4_rematch.py             # 실제 수정
 """
-import sys, io, re, argparse
+import sys, io, re, argparse, os
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
 load_dotenv()
-engine = create_engine("postgresql://tradediary:tradediary@localhost:5432/onetask")
+engine = create_engine(os.environ.get("DATABASE_URL", "postgresql://tradediary:tradediary@localhost:5432/onetask"))
 
 SQL_FILES = [
     "hsk4_data.sql",

@@ -12,14 +12,14 @@ HSK4 meaning/example shift 수정 스크립트
   python fix_hsk4_shift.py --dry-run   # 미리보기 (변경 없음)
   python fix_hsk4_shift.py             # 실제 수정
 """
-import sys, io, argparse
+import sys, io, argparse, os
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
 load_dotenv()
-engine = create_engine("postgresql://tradediary:tradediary@localhost:5432/onetask")
+engine = create_engine(os.environ.get("DATABASE_URL", "postgresql://tradediary:tradediary@localhost:5432/onetask"))
 
 DUP_IDS = {392, 404, 473}
 
