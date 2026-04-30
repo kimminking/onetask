@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-04-30
+### 완료
+- HSK3~6 단어-뜻/예문 불일치 프로덕션 DB 수정
+  - 로컬 DB에서 정확한 데이터로 SQL 생성 → 프로덕션 psql로 적용
+  - HSK4: 601개 전부 일치 (기존 499개 불일치)
+  - HSK3/5/6: 4099개 전부 일치
+- fix 스크립트 DATABASE_URL 하드코딩 제거 (.env에서 읽도록 수정)
+
+### 변경된 파일
+- `backend/fix_hsk4_shift.py` — DATABASE_URL 하드코딩 → os.environ.get()
+- `backend/fix_hsk4_rematch.py` — 동일
+- `backend/fix_hsk4_phase2.py` — 동일
+- `fix_hsk4_production.sql` — HSK4 프로덕션 수정 SQL (신규)
+- `fix_hsk356_production.sql` — HSK3/5/6 프로덕션 수정 SQL (신규)
+
+### 다음 세션
+- 프로덕션에서 HSK 단어 UI 정상 동작 확인
+- fix SQL 파일들 정리 (적용 완료 후 삭제 가능)
+
+---
+
 ## 2026-04-15 (세션 10)
 ### 완료
 - HSK3~6 누락 이미지 472개 재생성 완료 (누락 0개 달성)
