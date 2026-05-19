@@ -8,7 +8,7 @@ import TaskList from "@/components/TaskList";
 import AddTaskForm from "@/components/AddTaskForm";
 import DoneList from "@/components/DoneList";
 import { getUser, clearAuth } from "@/lib/auth";
-import { subscribePush, getPushPermission } from "@/lib/push";
+import { subscribePush } from "@/lib/push";
 import { api } from "@/lib/api";
 
 type Tab = "todo" | "done";
@@ -23,7 +23,7 @@ export default function Home() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
   useEffect(() => {
-    getPushPermission().then(setPushPermission);
+    if ("Notification" in window) setPushPermission(Notification.permission);
     api.stats.overview()
       .then((s) => setWordToday(s.zh_today + s.en_today + s.ja_today))
       .catch(() => {});
